@@ -1,7 +1,5 @@
 # Machine-Learning-with_Python
 
-Github: 
-$git clone https://github.com/amueller/introduction_to_ml_with_pyhon.git
 
 Local Github: /Users/research/MLPython
 
@@ -13,17 +11,8 @@ Local PDF & source code:
 Start Jupyter:
 $ jupyter notebook
 
-(https://mybinder.org/v2/gh/amueller/introduction_to_ml_with_python/master)
 
 # Introduction to Machine Learning with Python
-
-This repository holds the code for the forthcoming book "Introduction to Machine
-Learning with Python" by [Andreas Mueller](http://amueller.io) and [Sarah Guido](https://twitter.com/sarah_guido).
-You can find details about the book on the [O'Reilly website](http://shop.oreilly.com/product/0636920030515.do).
-
-
-All datasets are included in the repository, with the exception of the aclImdb dataset, which you can download from
-the page of [Andrew Maas](http://ai.stanford.edu/~amaas/data/sentiment/). 
 
 If you get ``ImportError: No module named mglearn`` you can try to install mglearn into your python environment using the command ``pip install mglearn`` in your terminal or ``!pip install mglearn`` in Jupyter Notebook.
 ## Setup
