@@ -44,19 +44,19 @@ https://github.com/hanyun2019/Machine-Learning-with_Python.git
 Local Github: /Users/research/MLPython
 
 Create a new repository on the command line
-echo "# Machine-Learning-with_Python" >> README.md
-git init
-git add README.md
+$ echo "# Machine-Learning-with_Python" >> README.md
+$ git init
+$ git add README.md
 $ git config --global user.email xxxxxxxxx@gmail.com
-git commit -m "first commit"
-git remote add origin https://github.com/hanyun2019/Machine-Learning-with_Python.git
-git push -u origin master
+$ git commit -m "first commit"
+$ git remote add origin https://github.com/hanyun2019/Machine-Learning-with_Python.git
+$ git push -u origin master
 
 Push an existing repository from the command line
-git remote add origin https://github.com/hanyun2019/Machine-Learning-with_Python.git
-git add .
-git commit -m "update for git commit test"
-git push origin master
+$ git remote add origin https://github.com/hanyun2019/Machine-Learning-with_Python.git
+$ git add .
+$ git commit -m "update for git commit test"
+$ git push origin master
 
 
 
