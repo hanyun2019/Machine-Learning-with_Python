@@ -25,38 +25,12 @@ on text processing also requirs ``nltk`` and ``spacy``.
 If you already have a Python environment and are using pip to install packages, you need to run
 pip install numpy scipy scikit-learn matplotlib pandas pillow graphviz
 $ pip install numpy scipy scikit-learn matplotlib pandas pillow graphviz
-Requirement already satisfied: numpy in /usr/local/lib/python3.7/site-packages (1.17.0)
-Requirement already satisfied: scipy in /usr/local/lib/python3.7/site-packages (1.3.1)
-Requirement already satisfied: scikit-learn in /Users/eunice/Library/Python/3.7/lib/python/site-packages (0.21.3)
-Requirement already satisfied: matplotlib in /usr/local/lib/python3.7/site-packages (3.1.1)
-Requirement already satisfied: pandas in /usr/local/lib/python3.7/site-packages (0.25.0)
-Requirement already satisfied: pillow in /Users/eunice/Library/Python/3.7/lib/python/site-packages (6.1.0)
-Requirement already satisfied: graphviz in /Users/eunice/Library/Python/3.7/lib/python/site-packages (0.8.4)
-Requirement already satisfied: joblib>=0.11 in /Users/eunice/Library/Python/3.7/lib/python/site-packages (from scikit-learn) (0.13.2)
-Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.7/site-packages (from matplotlib) (1.1.0)
-Requirement already satisfied: python-dateutil>=2.1 in /usr/local/lib/python3.7/site-packages (from matplotlib) (2.8.0)
-Requirement already satisfied: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 in /usr/local/lib/python3.7/site-packages (from matplotlib) (2.4.2)
-Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.7/site-packages (from matplotlib) (0.10.0)
-Requirement already satisfied: pytz>=2017.2 in /usr/local/lib/python3.7/site-packages (from pandas) (2019.2)
-Requirement already satisfied: setuptools in /usr/local/lib/python3.7/site-packages (from kiwisolver>=1.0.1->matplotlib) (41.0.1)
-Requirement already satisfied: six>=1.5 in /usr/local/lib/python3.7/site-packages (from python-dateutil>=2.1->matplotlib) (1.12.0)
+
 
 You also need to install the graphiz C-library, which is easiest using a package manager.
 If you are using OS X and homebrew, you can ``brew install graphviz``. 
 $ brew install graphviz
-Updating Homebrew...
-==> Installing dependencies for graphviz: libpng, freetype, fontconfig, jpeg, libtiff, webp, gd, libffi, pcre, openssl@1.1, readline, python, glib, jasper, netpbm, gts and libtool
-Python has been installed as
-  /usr/local/bin/python3
 
-Unversioned symlinks `python`, `python-config`, `pip` etc. pointing to
-`python3`, `python3-config`, `pip3` etc., respectively, have been installed into
-  /usr/local/opt/python/libexec/bin
-
-You can install Python packages with
-  pip3 install <package>
-They will install into the site-package directory
-  /usr/local/lib/python3.7/site-packages
 
 For the chapter on text processing you also need to install ``nltk`` and ``spacy``:
 pip install nltk spacy
