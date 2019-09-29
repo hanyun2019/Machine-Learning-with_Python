@@ -23,39 +23,56 @@ on text processing also requirs ``nltk`` and ``spacy``.
 
 ### Installing packages with pip
 If you already have a Python environment and are using pip to install packages, you need to run
-pip install numpy scipy scikit-learn matplotlib pandas pillow graphviz
+
 $ pip install numpy scipy scikit-learn matplotlib pandas pillow graphviz
 
 
 You also need to install the graphiz C-library, which is easiest using a package manager.
 If you are using OS X and homebrew, you can ``brew install graphviz``. 
+
 $ brew install graphviz
 
 
 For the chapter on text processing you also need to install ``nltk`` and ``spacy``:
-pip install nltk spacy
+
+$ pip install nltk spacy
 
 ### Downloading English language model
+
 For the text processing chapter, you need to download the English language model for spacy using
-python -m spacy download en
+
+$ python -m spacy download en
 
 My github for ML with Python:
 https://github.com/hanyun2019/Machine-Learning-with_Python.git
+
 Local Github: /Users/research/MLPython
 
 Create a new repository on the command line
+
 $ echo "# Machine-Learning-with_Python" >> README.md
+
 $ git init
+
 $ git add README.md
+
 $ git config --global user.email xxxxxxxxx@gmail.com
+
 $ git commit -m "first commit"
+
 $ git remote add origin https://github.com/hanyun2019/Machine-Learning-with_Python.git
+
 $ git push -u origin master
 
+
 Push an existing repository from the command line
+
 $ git remote add origin https://github.com/hanyun2019/Machine-Learning-with_Python.git
+
 $ git add .
+
 $ git commit -m "update for git commit test"
+
 $ git push origin master
 
 
