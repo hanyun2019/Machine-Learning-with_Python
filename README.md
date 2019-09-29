@@ -47,23 +47,16 @@ Create a new repository on the command line
 echo "# Machine-Learning-with_Python" >> README.md
 git init
 git add README.md
+$ git config --global user.email xxxxxxxxx@gmail.com
 git commit -m "first commit"
 git remote add origin https://github.com/hanyun2019/Machine-Learning-with_Python.git
 git push -u origin master
 
 Push an existing repository from the command line
 git remote add origin https://github.com/hanyun2019/Machine-Learning-with_Python.git
-git push -u origin master
-
-Git operation demos are as the follows:
-$ echo "# Machine-Learning-with_Python" >> README.md
-$ git init
-Initialized empty Git repository in /Users/research/MLPython/.git/
-$ git add README.md
-$ git config --global user.email hxxxxxxx9@gmail.com
-$ git commit -m "first commit"
-$ git remote add origin https://github.com/hanyun2019/Machine-Learning-with_Python.git
-$ git push -u origin master
+git add .
+git commit -m "update for git commit test"
+git push origin master
 
 
 
