@@ -8,7 +8,6 @@ import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
-
 # # Versions Used in your environment
 # import sys
 # print("Python version:", sys.version)
@@ -195,7 +194,34 @@ if __name__ == '__main__':
     ## First things first: Look at your data
     # Before building a machine learning model, it is often a good idea to inspect the data, 
     # to see if the task is easily solvable without machine learning, 
-    # or if the desired infor‐ mation might not be contained in the data.
+    # or if the desired information might not be contained in the data.
+
+    # Additionally, inspecting your data is a good way to find abnormalities and peculiarities. 
+    # In the real world, inconsistencies in the data and unexpected measurements are very common.
+
+    # One of the best ways to inspect data is to visualize it. 
+    # One way to do this is by using a scatter plot(散点图).   
+
+    # A scatter plot of the data puts one feature along the x-axis, one feature along the y- axis, and draws a dot for each data point.
+    # Unfortunately, computer screens have only two dimensions, which allows us to only plot two (or maybe three) features at a time. 
+    # It is difficult to plot datasets with more than three features this way.
+    # One way around this problem is to do a pair plot(散点图矩阵), 
+    # which looks at all pairs of two features. 
+
+   
+    # import mglearn
+    # create dataframe from data in X_train
+    # label the columns using the strings in iris_dataset.feature_names 
+    iris_dataframe = pd.DataFrame(X_train, columns=iris_dataset.feature_names)
+    # create a scatter matrix from the dataframe, color by y_train
+
+    # pd.plotting.scatter_matrix(iris_dataframe, c=y_train, figsize=(15, 15),
+    #                        marker='o', hist_kwds={'bins': 20}, s=60,
+    #                        alpha=.8, cmap=mglearn.cm3)
+
+    pd.plotting.scatter_matrix(iris_dataframe, c=y_train, figsize=(15, 15),
+                           marker='o', hist_kwds={'bins': 20}, s=60,
+                           alpha=.8)
 
 
     
