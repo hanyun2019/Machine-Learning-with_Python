@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+
 
 # # Versions Used in your environment
 # import sys
@@ -29,7 +31,6 @@ from sklearn.model_selection import train_test_split
 
 # import sklearn
 # print("scikit-learn version:", sklearn.__version__)
-
 
 
 if __name__ == '__main__':
@@ -79,6 +80,8 @@ if __name__ == '__main__':
     print("\nSimple dataset of people:\n{}".format(data))
 
 
+    #########################################################################################
+
 
     ## Classifying Iris Species
     # The data we will use for this example is the iris dataset, a classical dataset in machine learning an statistics.
@@ -115,7 +118,7 @@ if __name__ == '__main__':
     #     The data set contains 3 classes of 50 instances each, where each class refers to a type of iris plant.  
     #     One class is linearly separable from the other 2; the latter are NOT linearly separable from each other.
 
-    print("\n--------'Sample - Classifying Iris Species' starts here:--------")
+    print("\n--------'Sample - Classifying Iris Species' starts here--------")
     
     ## Meet the Data
     # from sklearn.datasets import load_iris
@@ -126,17 +129,17 @@ if __name__ == '__main__':
     # We show the beginning of the description here.
     # print(iris_dataset['DESCR'][:9993] + "\n...")
 
-    ## Target names:
+    # Target names:
     # The value with key target_names is an array of strings, 
     # containing the species of flower that we want to predict.
     # Target names: ['setosa' 'versicolor' 'virginica']
     print("\nTarget names:\n", iris_dataset['target_names'])
 
-    ## Feature names:
+    # Feature names:
     # The feature_names are a list of strings, giving the description of each feature.
     print("\nFeature names:\n", iris_dataset['feature_names'])
 
-    ## Data:
+    # Data:
     # The data itself is contained in the target and data fields. 
     # The data contains the numeric measurements of sepal length, sepal width, petal length, 
     # and petal width in a numpy array. 
@@ -164,7 +167,7 @@ if __name__ == '__main__':
     # 0 means Setosa, 1 means Versicolor and 2 means Virginica.
     print("\nIris Target:\n", iris_dataset['target'])
 
-
+    ######################################################################################
 
     ## Measuring Success: Training and Testing Data
     # Scikit-learn contains a function that shuffles the dataset and splits it for you, 
@@ -189,7 +192,7 @@ if __name__ == '__main__':
     print("\nX_test shape:\n", X_test.shape)
     print("\ny_test shape:\n", y_test.shape)
 
-
+    #########################################################################################
 
     ## First things first: Look at your data
     # Before building a machine learning model, it is often a good idea to inspect the data, 
@@ -209,23 +212,86 @@ if __name__ == '__main__':
     # which looks at all pairs of two features. 
 
    
-    # import mglearn
     # create dataframe from data in X_train
     # label the columns using the strings in iris_dataset.feature_names 
     iris_dataframe = pd.DataFrame(X_train, columns=iris_dataset.feature_names)
     # create a scatter matrix from the dataframe, color by y_train
-
-    # pd.plotting.scatter_matrix(iris_dataframe, c=y_train, figsize=(15, 15),
-    #                        marker='o', hist_kwds={'bins': 20}, s=60,
-    #                        alpha=.8, cmap=mglearn.cm3)
-
     pd.plotting.scatter_matrix(iris_dataframe, c=y_train, figsize=(15, 15),
                            marker='o', hist_kwds={'bins': 20}, s=60,
                            alpha=.8)
 
 
+    #########################################################################################
+
+
+    ## Building Your First Model: k-Nearest Neighbors
+    # The k nearest neighbors classification algorithm is implemented in the KNeighborsClassifier class in the neighbors module.
+    # Before we can use the model, we need to instantiate the class into an object. This is when we will set any parameters of the model. 
+    # The single parameter of the KNeighbor sClassifier is the number of neighbors, which we will set to one.
+    
+    # from sklearn.neighbors import KNeighborsClassifier
+    knn = KNeighborsClassifier(n_neighbors=1)
+
+    # The knn object encapsulates the algorithm to build the model from the training data, 
+    # as well the algorithm to make predictions on new data points.
+    # It will also hold the information the algorithm has extracted from the training data. 
+    # In the case of KNeighborsClassifier, it will just store the training set.
+
+    # To build the model on the training set, we call the fit method of the knn object, 
+    # which takes as arguments the numpy array X_train containing the training data and 
+    # the numpy array y_train of the corresponding training labels:  
+    knn.fit(X_train, y_train)
+    print("\nknn:\n", knn)
+
+
+    #########################################################################################
+
+
+    ## Making Predictions
+    # Imagine we found an iris in the wild with a sepal length of 5cm, a sepal width of 2.9cm, 
+    # a petal length of 1cm and a petal width of 0.2cm. What species of iris would this be?
+
+    # We can put this data into a numpy array, again with the shape number of samples (one) times number of features (four).
+    X_new = np.array([[5, 2.9, 1, 0.2]])
+    print("\nX_new.shape:\n", X_new.shape)
+
+    # To make prediction we call the predict method of the knn object.
+    prediction = knn.predict(X_new)
+    print("\nPrediction:\n", prediction)
+    print("\nPredicted target name:\n", iris_dataset['target_names'][prediction])
     
 
+    #########################################################################################
+
+
+    ## Evaluating the model
+    # We can make a prediction for an iris in the test data, and compare it against its label (the known species). 
+    # We can measure how well the model works by computing the accuracy, 
+    # which is the fraction of flowers for which the right species was predicted.
+
+    y_pred = knn.predict(X_test)
+    print("\nIris test data set predictions:\n", y_pred)
+    print("\nIris test data set predicted target name:\n", iris_dataset['target_names'][y_pred])
+    print("\nTest set score(using np.mean(y_pred == y_test)): {:.2f}\n".format(np.mean(y_pred == y_test)))
+
+    # We can also use the score method of the knn object, which will compute the test set accuracy.
+    print("\nTest set score(using knn.score(X_test, y_test)): {:.2f}\n".format(knn.score(X_test, y_test)))
+    
+
+    ##########################################################################################
+
+
+    ## Summary
+    # This snippet contains the core code for applying any machine learning algorithms using scikit-learn. 
+    # The fit, predict and score methods are the common interface to supervised models in scikit-learn.
+
+    X2_train, X2_test, y2_train, y2_test = train_test_split(
+    iris_dataset['data'], iris_dataset['target'], random_state=0)
+
+    knn2 = KNeighborsClassifier(n_neighbors=1)
+    knn2.fit(X2_train, y2_train)
+
+    print("\nSummary - Test set score: {:.2f}\n".format(knn2.score(X2_test, y2_test)))
 
 
 
