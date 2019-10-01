@@ -76,8 +76,11 @@ $ git commit -m "update for git commit test"
 $ git push origin master
 
 
+-----------------------------------------------------------
+
 
 Chapter 1: Introduction 
+
 Installing Scikit-learn 
 Scikit-learn depends on two other Python packages, NumPy and SciPy. For plotting and interactive development, you should also install matplotlib, IPython and the Jupyter notebook. 
 
@@ -97,7 +100,6 @@ Y = iris_dataset.target
 
 iris_dataframe = pd.DataFrame(X, columns=iris_dataset.feature_names)
 
-# Create a scatter matrix from the dataframe, color by y_train
 grr = pd.plotting.scatter_matrix(iris_dataframe, c=Y, figsize=(15, 15), marker='o',
                                  hist_kwds={'bins': 20}, s=60, alpha=.8)
 For pandas version < v0.20.0.
@@ -113,4 +115,5 @@ To not display the image and save it directly to file you can use this method:
 plt.savefig('foo.png')
 Also remove
 
-# %matplotlib inline
+%matplotlib inline
+
