@@ -32,6 +32,12 @@ from sklearn.neighbors import KNeighborsClassifier
 # import sklearn
 # print("scikit-learn version:", sklearn.__version__)
 
+# import tensorflow
+# print("\nTensorflow version:", tensorflow.__version__)
+
+# from tensorflow import keras
+# print("\nKeras version:", keras.__version__)
+
 
 if __name__ == '__main__':
 

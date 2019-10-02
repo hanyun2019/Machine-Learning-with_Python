@@ -88,32 +88,87 @@ Scikit-learn depends on two other Python packages, NumPy and SciPy. For plotting
 BUG FIX No 1.1
 https://stackoverflow.com/questions/42592493/displaying-pair-plot-in-pandas-data-frame
 
-import pandas as pd
-import matplotlib.pyplot as plt
-%matplotlib inline
-
-from sklearn import datasets
-
-iris_dataset = datasets.load_iris()
-X = iris_dataset.data
-Y = iris_dataset.target
-
-iris_dataframe = pd.DataFrame(X, columns=iris_dataset.feature_names)
-
 grr = pd.plotting.scatter_matrix(iris_dataframe, c=Y, figsize=(15, 15), marker='o',
                                  hist_kwds={'bins': 20}, s=60, alpha=.8)
-For pandas version < v0.20.0.
 
 Thanks to michael-szczepaniak for pointing out that this API had been deprecated.
 
 grr = pd.scatter_matrix(iris_dataframe, c=Y, figsize=(15, 15), marker='o',
                         hist_kwds={'bins': 20}, s=60, alpha=.8)
+
 I just had to remove the cmap=mglearn.cm3 piece, because I was not able to make mglearn work. There is a version mismatch issue with sklearn.
 
 To not display the image and save it directly to file you can use this method:
 
 plt.savefig('foo.png')
+
 Also remove
 
 %matplotlib inline
+
+-----------------------------------------------------------
+
+
+Chapter 2: Supervised Learning
+
+------------------------------------
+
+BUG FIX 2.1
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/externals/joblib/__init__.py:16: DeprecationWarning: sklearn.externals.joblib is deprecated in 0.21 and will be removed in 0.23. Please import this functionality directly from joblib, which can be installed with: pip install joblib. If this warning is raised when loading pickled models, you may need to re-serialize those models with scikit-learn 0.21+.
+
+--------------------
+
+for File "/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/externals/joblib/__init__.py":
+
+# from joblib import *
+
+import joblib
+
+--------------------
+
+for File "mglearn/plot_nmf.py":
+
+# from sklearn.externals.joblib import Memory
+
+from joblib import Memory
+
+---------------------
+
+for File "mglearn/plot_pca.py":
+
+# from sklearn.externals.joblib import Memory
+
+from joblib import Memory
+
+------------------------------------
+
+BUG FIX 2.2
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/externals/six.py:31: DeprecationWarning: The module is deprecated in version 0.21 and will be removed in version 0.23 since we've dropped support for Python 2.7. Please rely on the official version of six (https://pypi.org/project/six/). 
+"(https://pypi.org/project/six/).", DeprecationWarning)
+
+--------------------
+
+for File "/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/externals/six.py":
+
+# import warnings
+
+# warnings.warn("The module is deprecated in version 0.21 and will be removed "
+
+#               "in version 0.23 since we've dropped support for Python 2.7. "
+
+#               "Please rely on the official version of six "
+
+#               "(https://pypi.org/project/six/).", DeprecationWarning)
+
+------------------------------------
+
+
+
+
+
+
+
+
 
