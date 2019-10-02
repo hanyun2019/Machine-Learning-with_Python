@@ -1,5 +1,6 @@
 # Introduction to Machine Learning with Python
-# Chapter 1
+# Chapter 1: Overview
+# Refreshed by Haowen Huang
 
 import numpy as np
 from scipy import sparse
