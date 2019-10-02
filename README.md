@@ -121,7 +121,9 @@ BUG FIX 2.1
 
 for File "/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/externals/joblib/__init__.py":
 
-# from joblib import *
+from joblib import *
+
+Change to: 
 
 import joblib
 
@@ -129,7 +131,9 @@ import joblib
 
 for File "mglearn/plot_nmf.py":
 
-# from sklearn.externals.joblib import Memory
+from sklearn.externals.joblib import Memory
+
+Change to:
 
 from joblib import Memory
 
@@ -137,7 +141,9 @@ from joblib import Memory
 
 for File "mglearn/plot_pca.py":
 
-# from sklearn.externals.joblib import Memory
+from sklearn.externals.joblib import Memory
+
+Change to:
 
 from joblib import Memory
 
@@ -152,15 +158,17 @@ BUG FIX 2.2
 
 for File "/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/externals/six.py":
 
-# import warnings
+Comment the follow code:
 
-# warnings.warn("The module is deprecated in version 0.21 and will be removed "
+import warnings
 
-#               "in version 0.23 since we've dropped support for Python 2.7. "
+warnings.warn("The module is deprecated in version 0.21 and will be removed "
 
-#               "Please rely on the official version of six "
+               "in version 0.23 since we've dropped support for Python 2.7. "
 
-#               "(https://pypi.org/project/six/).", DeprecationWarning)
+               "Please rely on the official version of six "
+
+               "(https://pypi.org/project/six/).", DeprecationWarning)
 
 ------------------------------------
 
