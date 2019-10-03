@@ -16,7 +16,8 @@ def plot_linear_svc_regularization():
     x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
     y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
 
-    for ax, C in zip(axes, [1e-2, 10, 1e3]):
+    for ax, C in zip(axes, [1e-2, 10, 1e3]):    # C=0.01, C=10, C=1000
+    #for ax, C in zip(axes, [1e-2, 1, 1e3]):    # C=0.01, C=1, C=1000
         discrete_scatter(X[:, 0], X[:, 1], y, ax=ax)
 
         svm = LinearSVC(C=C, tol=0.00001, dual=False).fit(X, y)

@@ -12,6 +12,9 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 
 ### Supervised Learning
 ## 2.1 Classification and Regression
@@ -380,7 +383,7 @@ print("\nLinearRegression - Boston Housing dataset test set score: {:.2f}".forma
 # The particular kind used by Ridge regression is known as l2 regularization.
 # 岭回归选择的斜率系数w很小（接近于0），这是一种正则化：L2正则化
 
-print("\n----------- Ridge regression performs on Boston Housing dataset example -----------")
+print("\n----------- Ridge(l2 regularization) regression performs on Boston Housing dataset example -----------")
 
 # from sklearn.linear_model import Ridge
 
@@ -437,6 +440,234 @@ print("\nRidge regression(alpha=0.1) - Boston Housing dataset test set score: {:
 
 
 
+# 2.4.3 Lasso(l1 regularization)
+# An alternative to Ridge for regularizing linear regression is the Lasso. The lasso also restricts coefficients to be close to zero, 
+# similarly to Ridge regression, but in a slightly different way, called “l1” regularization.
+# The consequence of l1 regularization is that when using the Lasso, some coefficients are exactly zero. 
+# This means some features are entirely ignored by the model. This can be seen as a form of automatic feature selection. 
+# Having some coefficients be exactly zero often makes a model easier to interpret, and can reveal the most important features of your model.
+
+print("\n----------- Lasso(l1 regularization) regression example -----------")
+
+# from sklearn.linear_model import Lasso
+
+# default alpha=1.0
+lasso = Lasso().fit(X_train, y_train)
+print("\nLasso(l1 regularization) regression(alpha=1.0) - Training set score: {:.2f}".format(lasso.score(X_train, y_train)))
+print("\nLasso(l1 regularization) regression(alpha=1.0) - Test set score: {:.2f}".format(lasso.score(X_test, y_test)))
+print("\nLasso(l1 regularization) regression(alpha=1.0) - Number of features used:", np.sum(lasso.coef_ != 0))
+print("\nLasso(l1 regularization) regression(alpha=1.0) - All features:", lasso.coef_)   # print out all the features
+
+# Result:
+# Lasso(l1 regularization) regression(alpha=1.0) - training set score: 0.29
+# Lasso(l1 regularization) regression(alpha=1.0) - test set score: 0.21
+# Lasso(l1 regularization) regression(alpha=1.0) - Number of features used: 4
+
+# As you can see, the Lasso does quite badly, both on the training and the test set. This indicates that we are underfitting. 
+# We find that it only used 4 of the 105 features. 
+# Similarly to Ridge, the Lasso also has a regularization parameter alpha that controls how strongly coefficients are pushed towards zero.
+# Above, we used the default of alpha=1.0. To diminish underfitting, let’s try decreasing alpha.
+# We increase the default setting of "max_iter", otherwise the model would warn us that we should increase max_iter.
+
+# alpha=0.01
+lasso001 = Lasso(alpha=0.01, max_iter=100000).fit(X_train, y_train)
+print("\nLasso(l1 regularization) regression(alpha=0.01) - Training set score: {:.2f}".format(lasso001.score(X_train, y_train)))
+print("\nLasso(l1 regularization) regression(alpha=0.01) - Test set score: {:.2f}".format(lasso001.score(X_test, y_test)))
+print("\nLasso(l1 regularization) regression(alpha=0.01) - Number of features used:", np.sum(lasso001.coef_ != 0))
+print("\nLasso(l1 regularization) regression(alpha=0.01) - All features:", lasso001.coef_)   # print out all the features
+
+# A lower alpha allowed us to fit a more complex model, which worked better on the training and the test data. 
+# The performance is slightly better than using Ridge, and we are using only 32 of the 105 features. 
+
+# alpha=0.0001
+lasso00001 = Lasso(alpha=0.0001, max_iter=100000).fit(X_train, y_train)
+print("\nLasso(l1 regularization) regression(alpha=0.0001) - Training set score: {:.2f}".format(lasso00001.score(X_train, y_train)))
+print("\nLasso(l1 regularization) regression(alpha=0.0001) - Test set score: {:.2f}".format(lasso00001.score(X_test, y_test)))
+print("\nLasso(l1 regularization) regression(alpha=0.0001) - Number of features used:", np.sum(lasso00001.coef_ != 0))
+print("\nLasso(l1 regularization) regression(alpha=0.0001) - All features:", lasso00001.coef_)   # print out all the features
+
+# If we set alpha too low, we again remove the effect of regularization and end up with a result similar to LinearRegression.
+
+# Result:
+# Lasso(l1 regularization) regression(alpha=0.01) - Training set score: 0.90
+# Lasso(l1 regularization) regression(alpha=0.01) - Test set score: 0.77
+# Lasso(l1 regularization) regression(alpha=0.01) - Number of features used: 33
+
+# Lasso(l1 regularization) regression(alpha=0.0001) - Training set score: 0.95
+# Lasso(l1 regularization) regression(alpha=0.0001) - Test set score: 0.64
+# Lasso(l1 regularization) regression(alpha=0.0001) - Number of features used: 96
+
+# Comparison of Ridge and Lasso Models
+# 1) In practice, Ridge regression is usually the first choice between these two models. 
+# 2) However, if you have a large amount of features and expect only a few of them to be important, Lasso might be a better choice. 
+# 3) Similarly, if you would like to have a model that is easy to interpret, Lasso will provide a model that is easier to understand, 
+# as it will select only a subset of the input features.
+
+
+
+# 2.4.4 Linear models for Classification
+# Linear models are also extensively used for classification. 
+# Let’s look at binary classification first. In this case, a prediction is made using the following formula:
+# y = w[0]*x[0] + w[1]*x[1] + ... + w[p] * x[p] + b > 0 
+# The formula looks very similar to the one for linear regression.
+# If the function was smaller than zero, we predict the class -1, if it was larger than zero, we predict the class +1.
+
+# For linear models for regression, the output y was a linear function of the features: a line, plane, or hyperplane (in higher dimensions). 
+# For linear models for classification, the decision boundary is a linear function of the input. 
+# In other words, a (binary) linear classifier is a classifier that separates two classes using a line, a plane or a hyperplane.
+
+# There are many algorithms for learning linear models. These algorithms all differ in the following two ways:
+# 1) How they measure how well a particular combination of coefficients and intercept fits the training data.
+# 2) If and what kind of regularization they use.
+
+# The two most common linear classification algorithms are:
+# 1) logistic regression, implemented in linear_model.LogisticRegression
+# 2) linear support vector machines (linear SVMs), implemented in svm.LinearSVC (SVC stands for Support Vector Classifier). 
+
+# Despite its name, LogisticRegression is a classification algorithm and not a regression algorithm, 
+# and should not be confused with LinearRegression.
+
+print("\n---- The decision boundary of the linear models(LogisticRegression and LinearSVC) to the forge dataset example ----")
+
+# We can apply the LogisticRegression and LinearSVC models to the forge dataset, 
+# and visualize the decision boundary as found by the linear models.
+
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.svm import LinearSVC
+
+X, y = mglearn.datasets.make_forge()
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 3))
+
+for model, ax in zip([LinearSVC(max_iter=10000), LogisticRegression(solver='lbfgs')], axes):
+    clf = model.fit(X, y)
+    mglearn.plots.plot_2d_separator(clf, X, fill=False, eps=0.5,
+                                    ax=ax, alpha=.7)
+    mglearn.discrete_scatter(X[:, 0], X[:, 1], y, ax=ax)
+    ax.set_title(clf.__class__.__name__)
+    ax.set_xlabel("Feature 0")
+    ax.set_ylabel("Feature 1")
+axes[0].legend()
+
+# For LogisticRegression and LinearSVC the trade-off parameter that determines the strength of the regularization is called C, 
+# and higher values of C correspond to less regularization. 
+# When using a high value of the parameter C, Logisti cRegression and LinearSVC try to fit the training set as best as possible, 
+# while with low values of the parameter C, the model put more emphasis on finding a coefficient vector w that is close to zero.
+
+mglearn.plots.plot_linear_svc_regularization()
+# C=0.01 / C=10 / C=1000
+# The code implemented in file "mglearn/plot_linear_svc_regularization.py" as the follows:
+# for ax, C in zip(axes, [1e-2, 10, 1e3]):    # C=0.01, C=10, C=1000 
+# 
+
+# 1) When C=0.01: we have a very small C corresponding to a lot of regularization. Most of the blue points are at the top, 
+# and most of the red points are at the bottom. The strongly regularized model chooses a relatively horizontal line, misclassifying two points.
+# 2) When C=10: C is slightly higher, and the model focuses more on the two misclassified samples, tilting the decision boundary. 
+# 3) When C=1000: a very high value of C in the model tilts the decision boundary a lot, now correctly classifying all red points. 
+# One of the blue points is still misclassified, as it is not possible to correctly classify all points in this dataset using a straight line. 
+# The model illustrated on the right hand side tries hard to correctly classify all points, but might not capture the overall layout of the classes well. 
+# In other words, this model is likely overfitting.
+
+
+# Let’s analyze LinearLogistic in more detail on the breast_cancer dataset.
+# 
+print("\n---- The LogisticRegression on the breast_cancer dataset example ----")
+
+# from sklearn.datasets import load_breast_cancer
+cancer = load_breast_cancer()
+
+# Default: C=1
+X_train, X_test, y_train, y_test = train_test_split(
+    cancer.data, cancer.target, stratify=cancer.target, random_state=42)
+logreg = LogisticRegression(solver='lbfgs',max_iter=5000).fit(X_train, y_train)
+print("\nThe LogisticRegression(C=1) on the breast_cancer dataset - Training set score: {:.3f}".format(logreg.score(X_train, y_train)))
+print("\nThe LogisticRegression(C=1) on the breast_cancer dataset - Test set score: {:.3f}".format(logreg.score(X_test, y_test)))
+
+# Result:
+# The LogisticRegression(C=1) on the breast_cancer dataset - Training set score: 0.958
+# The LogisticRegression(C=1) on the breast_cancer dataset - Test set score: 0.958
+
+# The default value of C=1 provides quite good performance, with 98% accuracy on both the training and the test set. 
+# As training and test set performance are very close, it is likely that we are underfitting. 
+# Let’s try to increase C to fit a more flexible model.
+
+# C=100
+logreg100 = LogisticRegression(C=100,solver='lbfgs',max_iter=5000).fit(X_train, y_train)
+print("\nThe LogisticRegression(C=100) on the breast_cancer dataset - Training set score: {:.3f}".format(logreg100.score(X_train, y_train)))
+print("\nThe LogisticRegression(C=100) on the breast_cancer dataset - Test set score: {:.3f}".format(logreg100.score(X_test, y_test)))
+
+# Result:
+# The LogisticRegression(C=100) on the breast_cancer dataset - Training set score: 0.984
+# The LogisticRegression(C=100) on the breast_cancer dataset - Test set score: 0.965
+
+# Using C=100 results in higher training set accuracy, and also a slightly increased test set accuracy, 
+# confirming our intuition that a more complex model should perform better.
+
+# C=0.01
+logreg001 = LogisticRegression(C=0.01,solver='lbfgs',max_iter=5000).fit(X_train, y_train)
+print("\nThe LogisticRegression(C=0.01) on the breast_cancer dataset - Training set score: {:.3f}".format(logreg001.score(X_train, y_train)))
+print("\nThe LogisticRegression(C=0.01) on the breast_cancer dataset - Test set score: {:.3f}".format(logreg001.score(X_test, y_test)))
+
+# Result:
+# The LogisticRegression(C=0.01) on the breast_cancer dataset - Training set score: 0.953
+# The LogisticRegression(C=0.01) on the breast_cancer dataset - Test set score: 0.951
+# When set c=0.01, both training and test set accuracy decrease relative to the default parameters(C=1).
+
+
+# Finally, lets look at the coefficients learned by the models with the three different settings of the regularization parameter C.
+plt.plot(logreg.coef_.T, 'o', label="C=1")
+plt.plot(logreg100.coef_.T, '^', label="C=100")
+plt.plot(logreg001.coef_.T, 'v', label="C=0.001")
+plt.xticks(range(cancer.data.shape[1]), cancer.feature_names, rotation=90)
+xlims = plt.xlim()
+plt.hlines(0, xlims[0], xlims[1])
+plt.xlim(xlims)
+plt.ylim(-5, 5)
+plt.xlabel("Feature")
+plt.ylabel("Coefficient magnitude")
+plt.legend()
+
+
+# If we desire a more interpretable model(可解释性更强的模型), using L1 regularization might help, as it limits the model to only using a few features. 
+# Here is the coefficient plot and classification accuracies for L1 regularization.
+
+print("\n---- The LogisticRegression(L1 regularization) on the breast_cancer dataset example ----")
+
+for C, marker in zip([0.001, 1, 100], ['o', '^', 'v']):
+    lr_l1 = LogisticRegression(C=C, solver="liblinear",penalty="l1",max_iter=5000).fit(X_train, y_train)
+    print("\nThe LogisticRegression(L1 regularization) on the breast_cancer dataset - Training accuracy of l1 logreg with C={:.3f}: {:.2f}".format(
+          C, lr_l1.score(X_train, y_train)))
+    print("\nThe LogisticRegression(L1 regularization) on the breast_cancer dataset - Test accuracy of l1 logreg with C={:.3f}: {:.2f}".format(
+          C, lr_l1.score(X_test, y_test)))
+    plt.plot(lr_l1.coef_.T, marker, label="C={:.3f}".format(C))
+
+plt.xticks(range(cancer.data.shape[1]), cancer.feature_names, rotation=90)
+xlims = plt.xlim()
+plt.hlines(0, xlims[0], xlims[1])
+plt.xlim(xlims)
+plt.xlabel("Feature")
+plt.ylabel("Coefficient magnitude")
+
+plt.ylim(-5, 5)
+plt.legend(loc=3)
+
+# Result:
+# The LogisticRegression(L1 regularization) on the breast_cancer dataset - Training accuracy of l1 logreg with C=0.001: 0.91
+# The LogisticRegression(L1 regularization) on the breast_cancer dataset - Test accuracy of l1 logreg with C=0.001: 0.92
+
+# The LogisticRegression(L1 regularization) on the breast_cancer dataset - Training accuracy of l1 logreg with C=1.000: 0.96
+# The LogisticRegression(L1 regularization) on the breast_cancer dataset - Test accuracy of l1 logreg with C=1.000: 0.96
+
+# The LogisticRegression(L1 regularization) on the breast_cancer dataset - Training accuracy of l1 logreg with C=100.000: 0.99
+# The LogisticRegression(L1 regularization) on the breast_cancer dataset - Test accuracy of l1 logreg with C=100.000: 0.98
+
+# Summary of Linear models for Classification
+# 用于二分类的线性模型与用户回归的线性模型有许多相似之处，与用于回归的线性模型一样，模型的主要差别在于penalty参数，这个参数会影响正则化，
+# 也会影响模型是使用所有可用特征还是只选择特征的一个子集
+
+
+# 2.4.5 Linear models for multiclass classification
+# 
 
 
 

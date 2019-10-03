@@ -172,6 +172,83 @@ warnings.warn("The module is deprecated in version 0.21 and will be removed "
 
 ------------------------------------
 
+BUG FIX 2.3
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/svm/base.py:929: ConvergenceWarning: Liblinear failed to converge, increase the number of iterations.
+  "the number of iterations.", ConvergenceWarning)
+
+https://stackoverflow.com/questions/52670012/convergencewarning-liblinear-failed-to-converge-increase-the-number-of-iterati
+
+LinearSVC default max_iter is 1000, change it to a large value.
+
+--------------------
+
+For my writing code: ch02/Supervised.py:
+
+LinearSVC()
+
+Change to:
+
+LinearSVC(max_iter=10000)
+
+
+------------------------------------
+
+BUG FIX 2.4
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/linear_model/logistic.py:432: FutureWarning: Default solver will be changed to 'lbfgs' in 0.22. Specify a solver to silence this warning.
+  FutureWarning)
+
+--------------------
+
+For my writing code: ch02/Supervised.py:
+
+LogisticRegression()
+
+Change to:
+
+LogisticRegression(solver='lbfgs')
+
+
+------------------------------------
+
+BUG FIX 2.5
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/linear_model/logistic.py:947: ConvergenceWarning: lbfgs failed to converge. Increase the number of iterations.
+  "of iterations.", ConvergenceWarning)
+
+https://github.com/scikit-learn/scikit-learn/pull/11476
+
+--------------------
+
+For my writing code: ch02/Supervised.py:
+
+LogisticRegression(solver='lbfgs')
+
+Change to:
+
+LogisticRegression(solver='lbfgs',max_iter=5000)
+
+------------------------------------
+
+BUG FIX 2.6
+
+As solver='lbfgs' doesn't supoort "l1" penalty, 
+
+So when use: 
+
+LogisticRegression(C=C, penalty="l1")
+
+I change to: 
+
+LogisticRegression(C=C, solver="liblinear",penalty="l1",max_iter=5000)
+
+Because solver="liblinear" can support "l1" penalty.
+
+------------------------------------
+
+
+
 
 
 
