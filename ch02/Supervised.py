@@ -5,8 +5,13 @@
 import mglearn
 import numpy as np
 import matplotlib.pyplot as plt
+import graphviz
+
 from sklearn.datasets import load_breast_cancer
 from sklearn.datasets import load_boston
+from sklearn.datasets import make_blobs
+from sklearn.datasets import load_iris
+
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neighbors import KNeighborsRegressor
@@ -15,7 +20,11 @@ from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
-from sklearn.datasets import make_blobs
+from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import export_graphviz
 
 ### Supervised Learning
 ## 2.1 Classification and Regression
@@ -26,8 +35,7 @@ from sklearn.datasets import make_blobs
 ## 2.2 Generalization, Overfitting, and Underfitting
 
 ## 2.3 Supervised Machine Learning Algorithms
-# 2.3.1 Some Sample Datasets
-
+## 2.3.1 Some Sample Datasets
 # An example of a synthetic two-class classification dataset is the forge dataset, which has two features. 
 # Below is a scatter plot visualizing all of the data points in this dataset. 
 # The plot has the first feature on the x-axis and the second feature on the y-axis. 
@@ -139,7 +147,7 @@ print("\nBoston housing extended data(features producted as new feature) X.shape
 
 
 # 2.3.2 KNN: k-Nearest Neighbor
-# 2.3.2.1 k-Neighbors classification
+# k-Neighbors classification
 # When considering more than one neighbor, we use voting to assign a label. 
 # This means, for each test point, we count how many neighbors are red, and how many neighbors are blue. 
 # We then assign the class that is more frequent: in other words, the majority class among the k neighbors.
@@ -174,7 +182,7 @@ print("\nKNN example test set predictions: ", clf.predict(X_test))
 print("\nKNN example test set accuracy: {:.2f}".format(clf.score(X_test, y_test)))
 
 
-# 2.3.2.2 Analyzing KNeighborsClassifier
+# Analyzing KNeighborsClassifier
 # For two-dimensional datasets, we can also illustrate the prediction for all possible test point in the xy-plane. 
 # We color the plane red in regions where points would be assigned the red class, and blue otherwise. 
 # This lets us view the decision boundary, which is the divide between where the algorithm assigns class red versus 
@@ -241,7 +249,7 @@ plt.legend()
 
 
 
-# 2.3.2.3 k-Neighbors Regression
+# k-Neighbors Regression
 # There is also a regression variant of the k-nearest neighbors algorithm, this time using the wave dataset. 
 # The k nearest neighbors algorithm for regression is implemented in the KNeighbors Regressor class in scikit-learn.
 print("\n----------- KNN(k-Nearest Neighbor) Algorithm: wave dataset regression example -----------")
@@ -271,7 +279,7 @@ print("\nKNN wave dataset regression example - test set R^2: {:.2f}\n".format(re
 
 
 
-# 2.3.2.4 Analyzing k nearest neighbors regression
+# Analyzing k nearest neighbors regression
 fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 # create 1,000 data points, evenly spaced between -3 and 3
 # 创建1000个数据点，在-3和3之间均匀分布
@@ -299,7 +307,7 @@ axes[0].legend(["Model predictions", "Training data/target",
 
 
 
-# 2.3.2.5 Strengths, weaknesses, and parameters
+# Strengths, weaknesses, and parameters
 # In principal, there are two important parameters to the KNeighbors classifier: 
 # 1）the number of neighbors； 2）how you measure distance between data points. 
 # For 2): by default, Euclidean distance(欧式距离) is used, which works well in many settings.
@@ -309,8 +317,8 @@ axes[0].legend(["Model predictions", "Training data/target",
 
 
 
-## 2.4 Linear models
-# 2.4.1 Linear models for regression
+## 2.3.3 Linear models
+# Linear models for regression
 # y = w[0]*x[0] + b
 # Trying to learn the parameters w[0] and b on our one-dimensional wave dataset:
 # mglearn.plots.plot_linear_regression_wave()
@@ -372,7 +380,7 @@ print("\nLinearRegression - Boston Housing dataset test set score: {:.2f}".forma
 # One of the most commonly used alternatives to standard linear regression is Ridge regression, which we will look into next.
 
 
-# 2.4.2 Ridge regression (l2 regularization)
+# Ridge regression (l2 regularization)
 # Ridge regression is also a linear model for regression, so the formula it uses to make predictions is still Formula (1), as for ordinary least squares. 
 # In Ridge regression,the coefficients w are chosen not only so that they predict well on the training data, but there is an additional constraint. 
 # We also want the magnitude of coefficients to be as small as possible; in other words, all entries of w should be close to 0.
@@ -441,7 +449,7 @@ print("\nRidge regression(alpha=0.1) - Boston Housing dataset test set score: {:
 
 
 
-# 2.4.3 Lasso(l1 regularization)
+# Lasso(l1 regularization)
 # An alternative to Ridge for regularizing linear regression is the Lasso. The lasso also restricts coefficients to be close to zero, 
 # similarly to Ridge regression, but in a slightly different way, called “l1” regularization.
 # The consequence of l1 regularization is that when using the Lasso, some coefficients are exactly zero. 
@@ -506,7 +514,7 @@ print("\nLasso(l1 regularization) regression(alpha=0.0001) - All features:", las
 
 
 
-# 2.4.4 Linear models for Classification
+# Linear models for Classification
 # Linear models are also extensively used for classification. 
 # Let’s look at binary classification first. In this case, a prediction is made using the following formula:
 # y = w[0]*x[0] + w[1]*x[1] + ... + w[p] * x[p] + b > 0 
@@ -668,8 +676,7 @@ plt.legend(loc=3)
 
 
 
-
-# 2.4.5 Linear models for multiclass classification
+# Linear models for multiclass classification
 # Many linear classification models are binary models, and don’t extend naturally to the multi-class case (with the exception of Logistic regression). 
 # A common technique to extend a binary classification algorithm to a multi-class classification algorithm is the one-vs-rest approach. 
 
@@ -736,7 +743,7 @@ plt.ylabel("Feature 1")
 
 
 
-# 2.4.6 Strengths, weaknesses and parameters
+# Strengths, weaknesses and parameters
 # 1) The main parameter of linear models is the regularization parameter, 
 # called alpha in the regression models and C in LinearSVC and LogisticRegression. Large alpha or small C mean simple models. 
 # In particular for the regression models, tuning this parameter is quite important. 
@@ -760,7 +767,160 @@ plt.ylabel("Feature 1")
 
 
 
-# 2.4.7 Naive Bayes Classifiers
+## 2.3.4 Naive Bayes Classifiers
+# https://scikit-learn.org/dev/modules/naive_bayes.html
+# Naive Bayes classifiers tend to be even faster in training. 
+# The price paid for this efficiency is that naive Bayes models often provide generalization performance that is slightly worse than linear classifiers like LogisticRegression and Linear SVC.
+# The reason that naive Bayes models learn parameters by looking at each feature individually, and collect simple per-class statistics from each feature.
+
+# There are three kinds of naive Bayes classifiers implemented in scikit-learn, GaussianNB, BernoulliNB and MultinomialNB.
+# GaussianNB can be applied to any continuous data, BernoulliNB assumes binary data, MultinomialNB assumes count data,
+# BernoulliNB and MultinomialNB are mostly used in text data classification.
+
+print("\n---- Naive Bayes Classifiers - GaussianNB load_iris dataset example ----")
+# GaussianNB can be applied to any continuous data
+# https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.GaussianNB.html
+# Can perform online updates to model parameters via partial_fit method. 
+# For details on algorithm used to update feature means and variance online, see Stanford CS tech report:
+# http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
+
+# from sklearn.datasets import load_iris
+# from sklearn.model_selection import train_test_split
+# from sklearn.naive_bayes import GaussianNB
+
+X, y = load_iris(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
+gnb = GaussianNB()
+y_pred = gnb.fit(X_train, y_train).predict(X_test)
+print("Naive Bayes Classifiers - GaussianNB - Number of mislabeled points out of a total %d points : %d"
+       % (X_test.shape[0], (y_test != y_pred).sum()))
+# 该例子可参考以下的详细说明：http://www.360doc.com/content/16/0918/18/16883405_591800906.shtml
+
+
+print("\n---- Naive Bayes Classifiers - BernoulliNB example ----")
+# BernoulliNB assumes binary data(BernoulliNB假定输入数据为二分类数据)
+# https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.BernoulliNB.html
+# Like MultinomialNB, this classifier is suitable for discrete data. The difference is that while 
+# MultinomialNB works with occurrence counts, BernoulliNB is designed for binary/boolean features.
+
+# from sklearn.naive_bayes import BernoulliNB
+
+# rng = np.random.RandomState(1)
+# X = rng.randint(5, size=(6, 100))
+X = np.random.randint(5, size=(6, 100))
+Y = np.array([1, 2, 3, 4, 5, 6])
+clf = BernoulliNB()
+clf.fit(X, Y)
+print("\nNaive Bayes Classifiers - BernoulliNB - clf.predict(X[2:3]): ",clf.predict(X[2:3]))
+
+
+
+print("\n---- Naive Bayes Classifiers - MultinomialNB example ----")
+# MultinomialNB assumes count data
+# https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html
+# The multinomial Naive Bayes classifier is suitable for classification with discrete features (e.g., word counts for text classification). 
+# The multinomial distribution normally requires integer feature counts. However, in practice, fractional counts such as tf-idf may also work.
+
+# from sklearn.naive_bayes import MultinomialNB
+
+X = np.random.randint(5, size=(6, 100))
+y = np.array([1, 2, 3, 4, 5, 6])
+clf = MultinomialNB()
+clf.fit(X, y)
+MultinomialNB(alpha=1.0, class_prior=None, fit_prior=True)
+print("\nNaive Bayes Classifiers - MultinomialNB - clf.predict(X[2:3]): ",clf.predict(X[2:3]))
+
+
+
+## 2.3.5 Decision trees
+
+print("\n---- Decision trees - load_breast_cancer() dataset example ----")
+
+# from sklearn.tree import DecisionTreeClassifier
+
+cancer = load_breast_cancer()
+X_train, X_test, y_train, y_test = train_test_split(
+    cancer.data, cancer.target, stratify=cancer.target, random_state=42)
+tree = DecisionTreeClassifier(random_state=0)
+tree.fit(X_train, y_train)
+print("\nDecision trees - load_breast_cancer() dataset - Accuracy on training set: {:.3f}".format(tree.score(X_train, y_train)))
+print("\nDecision trees - load_breast_cancer() dataset - Accuracy on test set: {:.3f}".format(tree.score(X_test, y_test)))
+
+# result:
+# Decision trees - load_breast_cancer() dataset - Accuracy on training set: 1.000
+# Decision trees - load_breast_cancer() dataset - Accuracy on test set: 0.937
+
+# Set max_depth=4 
+# Limiting the depth of the tree decreases overfitting. 
+# This leads to a lower accuracy on the training set, but an improvement on the test set.
+tree = DecisionTreeClassifier(max_depth=4, random_state=0)
+tree.fit(X_train, y_train)
+print("\nDecision trees - load_breast_cancer() dataset - Accuracy on training set: {:.3f}".format(tree.score(X_train, y_train)))
+print("\nDecision trees - load_breast_cancer() dataset - Accuracy on test set: {:.3f}".format(tree.score(X_test, y_test)))
+
+# result:
+# Decision trees - load_breast_cancer() dataset - Accuracy on training set: 0.988
+# Decision trees - load_breast_cancer() dataset - Accuracy on test set: 0.951
+
+
+
+# Analyzing Decision Trees
+# 
+
+print("\n---- Decision trees - Analyzing Decision Trees example ----")
+
+# from sklearn.tree import export_graphviz
+export_graphviz(tree, out_file="tree.dot", class_names=["malignant", "benign"],
+                feature_names=cancer.feature_names, impurity=False, filled=True)
+
+# import graphviz
+
+with open("tree.dot") as f:
+    dot_graph = f.read()
+graphviz.Source(dot_graph)
+
+
+
+# Feature Importance in trees
+#
+
+print("\n---- Decision trees - Feature Importance in trees example ----")
+
+print("\nFeature importances:")
+print(tree.feature_importances_)
+
+def plot_feature_importances_cancer(model):
+    n_features = cancer.data.shape[1]
+    plt.barh(np.arange(n_features), model.feature_importances_, align='center')
+    plt.yticks(np.arange(n_features), cancer.feature_names)
+    plt.xlabel("Feature importance")
+    plt.ylabel("Feature")
+    plt.ylim(-1, n_features)
+
+plot_feature_importances_cancer(tree)
+
+
+# Strengths, weaknesses and parameters
+# As discussed above, the parameters that control model complexity in decision trees are the pre-pruning parameters 
+# that stop the building of the tree before it is fully developed. Usually picking one of the pre-pruning strategies, 
+# either setting min_depth, max_leaf_nodes or min_samples_leaf is to prevent overfitting.
+
+# Decision trees have two advantages over many of the algorithms we discussed so far: 
+# 1) The resulting model can easily be visualized and understood by non-experts (at least for smaller trees)
+# 2) The algorithms is completely invariant to scaling of the data: As each feature is processed separately, 
+# and the possible splits of the data don’t depend on scaling, no preprocessing like normalization or standardization 
+# of features is needed for decision tree algorithms.
+
+# In particular, decision trees work well when you have features that are on completely different scales, 
+# or a mix of binary and continuous features.
+
+# The main down-side(缺点) of decision trees is that even with the use of pre-pruning, decision trees tend to overfit, 
+# and provide poor generalization performance. 
+# Therefore, in most applications, the ensemble methods we discuss below are usually used in place of a single decision tree.
+
+
+
+## 2.3.6 Ensembles of Decision Trees
 #
 
 
