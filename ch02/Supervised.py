@@ -15,6 +15,7 @@ from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
+from sklearn.datasets import make_blobs
 
 ### Supervised Learning
 ## 2.1 Classification and Regression
@@ -666,10 +667,101 @@ plt.legend(loc=3)
 # 也会影响模型是使用所有可用特征还是只选择特征的一个子集
 
 
+
+
 # 2.4.5 Linear models for multiclass classification
-# 
+# Many linear classification models are binary models, and don’t extend naturally to the multi-class case (with the exception of Logistic regression). 
+# A common technique to extend a binary classification algorithm to a multi-class classification algorithm is the one-vs-rest approach. 
+
+# In the one-vs-rest approach, a binary model is learned for each class, which tries to separate this class from all of the other classes, 
+# resulting in as many binary models as there are classes.
+
+# We use a two-dimensional dataset, where each class is given by data sampled from a Gaussian distribution.
+
+print("\n---- SVM Linear models LinearSVC() for multiclass classification dataset example ----")
+
+# from sklearn.datasets import make_blobs
+
+X, y = make_blobs(random_state=42)
+mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
+plt.xlabel("Feature 0")
+plt.ylabel("Feature 1")
+plt.legend(["Class 0", "Class 1", "Class 2"])
+
+# Now we train a LinearSVC classifier on the dataset
+linear_svm = LinearSVC().fit(X, y)
+print("\nSVM Linear models LinearSVC() for multiclass classification dataset - Coefficient shape: ", linear_svm.coef_.shape)
+print("\nSVM Linear models LinearSVC() for multiclass classification dataset - Intercept shape: ", linear_svm.intercept_.shape)
+print("\nSVM Linear models LinearSVC() for multiclass classification dataset - Coefficient: \n", linear_svm.coef_)
+print("\nSVM Linear models LinearSVC() for multiclass classification dataset - Intercept: \n", linear_svm.intercept_)
+
+# Result:
+# SVM Linear models LinearSVC() for multiclass classification dataset - Coefficient shape:  (3, 2)
+# SVM Linear models LinearSVC() for multiclass classification dataset - Intercept shape:  (3,)
+# SVM Linear models LinearSVC() for multiclass classification dataset - Coefficient: 
+# [[-0.17492293  0.23139944]
+# [ 0.4762171  -0.0693659 ]
+# [-0.18914368 -0.20399646]]
+# SVM Linear models LinearSVC() for multiclass classification dataset - Intercept: 
+# [-1.07745187  0.13140381 -0.08604844]
+
+# We see that the shape of the coef_ is (3, 2), meaning that each row of coef_ contains the coefficient vector for one of the three classes. 
+# Each row has two entries, corresponding to the two features in the dataset.
+# The intercept_ is now a one-dimensional array, storing the intercepts for each class.
+
+# Let’s visualize the lines given by the three binary classifiers
+mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
+line = np.linspace(-15, 15)
+for coef, intercept, color in zip(linear_svm.coef_, linear_svm.intercept_,
+                                  mglearn.cm3.colors):
+    plt.plot(line, -(line * coef[0] + intercept) / coef[1], c=color)
+plt.ylim(-10, 15)
+plt.xlim(-10, 8)
+plt.xlabel("Feature 0")
+plt.ylabel("Feature 1")
+plt.legend(['Class 0', 'Class 1', 'Class 2', 'Line class 0', 'Line class 1',
+            'Line class 2'], loc=(1.01, 0.3))
+
+# The following figure shows the prediction shown for all regions of the 2d space
+mglearn.plots.plot_2d_classification(linear_svm, X, fill=True, alpha=.7)
+mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
+line = np.linspace(-15, 15)
+for coef, intercept, color in zip(linear_svm.coef_, linear_svm.intercept_,
+                                  mglearn.cm3.colors):
+    plt.plot(line, -(line * coef[0] + intercept) / coef[1], c=color)
+plt.legend(['Class 0', 'Class 1', 'Class 2', 'Line class 0', 'Line class 1',
+            'Line class 2'], loc=(1.01, 0.3))
+plt.xlabel("Feature 0")
+plt.ylabel("Feature 1")
 
 
+
+# 2.4.6 Strengths, weaknesses and parameters
+# 1) The main parameter of linear models is the regularization parameter, 
+# called alpha in the regression models and C in LinearSVC and LogisticRegression. Large alpha or small C mean simple models. 
+# In particular for the regression models, tuning this parameter is quite important. 
+# Usually C and alpha are searched for on a logarithmic scale(通常在对数尺度上对C和alpha进行搜索).
+
+# 2）The other decision you have to make is whether you want to use L1 regularization or L2 regularization. 
+# If you assume that only few of your features are actually important, you should use L1. 
+# Otherwise, you should default to L2.
+# L1 can also be useful if interpretability(可解释性) of the model is important. 
+# As L1 will use only a few features, it is easier to explain which features are important to the model, 
+# and what the effect of these features is.
+
+# 3) Linear models are very fast to train, and also fast to predict. 
+# They scale to very large datasets and work well with sparse data(稀疏数据). 
+# If your data consists of hundreds of thousands or millions of samples, you might want to investigate SGDClassifier and SGDRegressor, 
+# which implement even more scalable versions of the linear models described above.
+
+# 4) Linear models often perform well when the number of features is large compared to the number of samples. 
+# They are also often used on very large datasets, simply because other models are not feasible to train. 
+# However, on smaller dataset, other models might yield better generalization performance.
+
+
+
+# 2.4.7 Naive Bayes Classifiers
+#
 
 
 
