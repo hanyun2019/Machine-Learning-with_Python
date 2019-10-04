@@ -6,11 +6,13 @@ import mglearn
 import numpy as np
 import matplotlib.pyplot as plt
 import graphviz
+import xgboost as xgb
 
 from sklearn.datasets import load_breast_cancer
 from sklearn.datasets import load_boston
 from sklearn.datasets import make_blobs
 from sklearn.datasets import load_iris
+from sklearn.datasets import make_moons
 
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -25,6 +27,11 @@ from sklearn.naive_bayes import BernoulliNB
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.tree import export_graphviz
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn import metrics
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
 
 ### Supervised Learning
 ## 2.1 Classification and Regression
@@ -792,7 +799,8 @@ X, y = load_iris(return_X_y=True)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0)
 gnb = GaussianNB()
 y_pred = gnb.fit(X_train, y_train).predict(X_test)
-print("Naive Bayes Classifiers - GaussianNB - Number of mislabeled points out of a total %d points : %d"
+print("\nNaive Bayes Classifiers - GaussianNB:\n",gnb)
+print("\nNaive Bayes Classifiers - GaussianNB - Number of mislabeled points out of a total %d points : %d"
        % (X_test.shape[0], (y_test != y_pred).sum()))
 # 该例子可参考以下的详细说明：http://www.360doc.com/content/16/0918/18/16883405_591800906.shtml
 
@@ -811,6 +819,7 @@ X = np.random.randint(5, size=(6, 100))
 Y = np.array([1, 2, 3, 4, 5, 6])
 clf = BernoulliNB()
 clf.fit(X, Y)
+print("\nNaive Bayes Classifiers - BernoulliNB:\n",clf)
 print("\nNaive Bayes Classifiers - BernoulliNB - clf.predict(X[2:3]): ",clf.predict(X[2:3]))
 
 
@@ -828,6 +837,7 @@ y = np.array([1, 2, 3, 4, 5, 6])
 clf = MultinomialNB()
 clf.fit(X, y)
 MultinomialNB(alpha=1.0, class_prior=None, fit_prior=True)
+print("\nNaive Bayes Classifiers - MultinomialNB:\n",clf)
 print("\nNaive Bayes Classifiers - MultinomialNB - clf.predict(X[2:3]): ",clf.predict(X[2:3]))
 
 
@@ -843,6 +853,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     cancer.data, cancer.target, stratify=cancer.target, random_state=42)
 tree = DecisionTreeClassifier(random_state=0)
 tree.fit(X_train, y_train)
+print("\nDecision trees - load_breast_cancer() dataset - DecisionTreeClassifier(default max_depth)\n",tree)
 print("\nDecision trees - load_breast_cancer() dataset - Accuracy on training set: {:.3f}".format(tree.score(X_train, y_train)))
 print("\nDecision trees - load_breast_cancer() dataset - Accuracy on test set: {:.3f}".format(tree.score(X_test, y_test)))
 
@@ -855,6 +866,7 @@ print("\nDecision trees - load_breast_cancer() dataset - Accuracy on test set: {
 # This leads to a lower accuracy on the training set, but an improvement on the test set.
 tree = DecisionTreeClassifier(max_depth=4, random_state=0)
 tree.fit(X_train, y_train)
+print("\nDecision trees - load_breast_cancer() dataset - DecisionTreeClassifier(max_depth=4)\n",tree)
 print("\nDecision trees - load_breast_cancer() dataset - Accuracy on training set: {:.3f}".format(tree.score(X_train, y_train)))
 print("\nDecision trees - load_breast_cancer() dataset - Accuracy on test set: {:.3f}".format(tree.score(X_test, y_test)))
 
@@ -920,20 +932,448 @@ plot_feature_importances_cancer(tree)
 
 
 
+
 ## 2.3.6 Ensembles of Decision Trees
-#
+# two ensemble models that have proven to be effective on a wide range of datasets for classification and regression, 
+# both of which use decision trees as their building block: Random Forests and Gradient Boosted Decision Trees.
+
+# Random Forests
+# A main drawback of decision trees is that they tend to overfit the training data. 
+# The idea of random forests is that each tree might do a relatively good job of predicting, but will likely overfit on part of the data.
+# Each tree should do an acceptable job of predicting the target, and should also be different from the other trees. 
+
+# To make a prediction using the random forest, the algorithm first makes a prediction for every tree in the forest. 
+# For regression, we can average these results to get our final prediction. 
+# For classification, a “soft voting” strategy is used. This means each algorithm makes a “soft” prediction, providing a probability for each possible output label. 
+# The probabilities predicted by all the trees are averaged, and the class with the highest label is predicted.
+
+
+# Analyzing Random Forests
+
+print("\n---- Random Forests - make_moons dataset example ----")
+
+# from sklearn.ensemble import RandomForestClassifier
+# from sklearn.datasets import make_moons
+
+# n_samples: we repeatedly draw an example randomly with replacement n_samples times 
+X, y = make_moons(n_samples=100, noise=0.25, random_state=3)
+X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y,
+                                                    random_state=42)
+# n_estimators: the number of trees to build
+forest = RandomForestClassifier(n_estimators=5, random_state=2)
+forest.fit(X_train, y_train)
+print("\nRandom Forests(5 trees) - make_moons dataset example - RandomForestClassifier:\n",forest)
+print("\nRandom Forests(5 trees) - Accuracy on training set: {:.3f}".format(forest.score(X_train, y_train)))
+print("\nRandom Forests(5 trees) - Accuracy on test set: {:.3f}".format(forest.score(X_test, y_test)))
+
+# Result:
+# Random Forests(5 trees) - Accuracy on training set: 0.960
+# Random Forests(5 trees) - Accuracy on test set: 0.920
+
+# The trees that are built as part of the random forest are stored in the estimator_attribute. 
+# Let’s visualize the decision boundaries learned by each tree, together with their aggregate prediction, as made by the forest.
+fig, axes = plt.subplots(2, 3, figsize=(20, 10))
+for i, (ax, tree) in enumerate(zip(axes.ravel(), forest.estimators_)):
+    ax.set_title("Tree {}".format(i))
+    mglearn.plots.plot_tree_partition(X_train, y_train, tree, ax=ax)
+    
+mglearn.plots.plot_2d_separator(forest, X_train, fill=True, ax=axes[-1, -1],
+                                alpha=.4)
+axes[-1, -1].set_title("Random Forest")
+mglearn.discrete_scatter(X_train[:, 0], X_train[:, 1], y_train)
+
+# You can clearly see that the decisions learned by the five trees are quite different. Each of them makes some mistakes, 
+# as some of the training points that are plotted here were not actually included in the training set of the tree, due to the bootstrap sampling.
+
+# The random forest overfit less than any of the trees individually, and provides a much more intuitive decision boundary. 
+# In any real application, we would use many more trees (often hundreds or thousands), leading to even smoother boundaries.
+# Let’s apply a random forest consisting of 100 trees on the breast cancer dataset: n_estimators=100
+X_train, X_test, y_train, y_test = train_test_split(
+    cancer.data, cancer.target, random_state=0)
+forest = RandomForestClassifier(n_estimators=100, random_state=0)
+forest.fit(X_train, y_train)
+
+print("\nRandom Forests(100 trees) - make_moons dataset example - RandomForestClassifier:\n",forest)
+print("\nRandom Forests(100 trees) - Accuracy on training set: {:.3f}".format(forest.score(X_train, y_train)))
+print("\nRandom Forests(100 trees) - Accuracy on test set: {:.3f}".format(forest.score(X_test, y_test)))
+
+# Result:
+# Random Forests(100 trees) - Accuracy on training set: 1.000
+# Random Forests(100 trees) - Accuracy on test set: 0.972
+
+# The follow code result can ONLY be shown on jupyter notebook
+# http://localhost:8888/notebooks/02-supervised-learning.ipynb#Decision-trees
+plot_feature_importances_cancer(forest)
+
+
+# Strengths, weaknesses and parameters
+# Random forests for regression and classification are currently among the most widely used machine learning methods.
+# They are very powerful, often work well without heavy tuning of the parameters, and don’t require scaling of the data.
+
+# you can use the n_jobs parameter to adjust the number of cores to use. Using more CPU cores will result in linear speed-ups 
+# You can set n_jobs=-1 to use all the cores in your computer.
+
+# Random forests don’t tend to perform well on very high dimensional, sparse data(稀疏数据), such as text data. 
+# For this kind of data, linear models might be more appropriate.
+
+# The important parameters to adjust are n_estimators, max_features and possibly pre-pruning options like max_depth. 
+# For n_estimators, larger is always better. Averaging more trees will yield a more robust ensemble.
 
 
 
 
+# Gradient Boosted Regression Trees (Gradient Boosting Machines) 
+# 梯度提升回归树（梯度提升机）
+# Gradient boosted regression trees is another ensemble method that combines multiple decision trees to a more powerful model. 
+# Despite the “regression” in the name, these models can be used for regression and classification.
+
+# In contrast to random forests, gradient boosting works by building trees in a serial manner, 
+# where each tree tries to correct the mistakes of the previous one. 
+# There is no randomization in gradient boosted regression trees; instead, strong pre-pruning is used. 
+
+# Gradient boosted trees often use very shallow trees(深度很小的树), of depth one to five, 
+# often making the model smaller in terms of memory, and making predictions faster.
+
+# The main idea behind gradient boosting is to combine many simple models (in this context known as weak learners), like shallow trees. 
+# Each tree can only provide good predictions on part of the data, and so more and more trees are added to iteratively improve performance.
+
+# Apart from the pre-pruning and the number of trees in the ensemble, another important parameter of gradient boosting is the learning_rate 
+# which controls how strongly each tree tries to correct the mistakes of the previous trees. 
+
+# Gradient boosted trees are frequently the winning entries in machine learning competitions, and are widely used in industry. 
+# They are generally a bit more sensitive to parameter settings than random forests, but can provide better accuracy if the parameter are set correctly.
+
+print("\n---- Gradient Boosted Regression Trees - breast_cancer dataset example ----")
+
+# from sklearn.ensemble import GradientBoostingClassifier
+
+X_train, X_test, y_train, y_test = train_test_split(
+    cancer.data, cancer.target, random_state=0)
+
+# By default, 100 trees of maximum depth three are used, with a learning rate of 0.1
+gbrt = GradientBoostingClassifier(random_state=0)
+gbrt.fit(X_train, y_train)
+
+print("\nGradient Boosted Regression Trees(default) - GradientBoostingClassifier:\n",gbrt)
+print("\nGradient Boosted Regression Trees(default) - breast_cancer dataset - Accuracy on training set: {:.3f}".format(gbrt.score(X_train, y_train)))
+print("\nGradient Boosted Regression Trees(default) - breast_cancer dataset - Accuracy on test set: {:.3f}".format(gbrt.score(X_test, y_test)))
+
+# Result:
+# Gradient Boosted Regression Trees - breast_cancer dataset - Accuracy on training set: 1.000
+# Gradient Boosted Regression Trees - breast_cancer dataset - Accuracy on test set: 0.965
+
+# As the training set accuracy is 100%, we are likely to be overfitting. 
+# To reduce overfitting, we could either apply stronger pre-pruning by limiting the maximum depth or lower the learning rate.
+# set max_depth=1
+gbrt = GradientBoostingClassifier(random_state=0, max_depth=1)
+gbrt.fit(X_train, y_train)
+
+print("\nGradient Boosted Regression Trees(max_depth=1) - GradientBoostingClassifier:\n",gbrt)
+print("\nGradient Boosted Regression Trees(max_depth=1) - breast_cancer dataset - Accuracy on training set: {:.3f}".format(gbrt.score(X_train, y_train)))
+print("\nGradient Boosted Regression Trees(max_depth=1) - breast_cancer dataset - Accuracy on test set: {:.3f}".format(gbrt.score(X_test, y_test)))
+
+# Result:
+# Gradient Boosted Regression Trees(max_depth=1) - breast_cancer dataset - Accuracy on training set: 0.991
+# Gradient Boosted Regression Trees(max_depth=1) - breast_cancer dataset - Accuracy on test set: 0.972
+
+# Default learning_rate=0.1
+# Now we set learning_rate=0.01 to lower the learning rate
+gbrt = GradientBoostingClassifier(random_state=0, learning_rate=0.01)
+gbrt.fit(X_train, y_train)
+
+print("\nGradient Boosted Regression Trees(learning_rate=0.01) - GradientBoostingClassifier:\n",gbrt)
+print("\nGradient Boosted Regression Trees(learning_rate=0.01) - breast_cancer dataset - Accuracy on training set: {:.3f}".format(gbrt.score(X_train, y_train)))
+print("\nGradient Boosted Regression Trees(learning_rate=0.01) - breast_cancer dataset - Accuracy on test set: {:.3f}".format(gbrt.score(X_test, y_test)))
+
+# Both methods of decreasing the model complexity decreased the training set accuracy as expected. 
+# In this case, lowering the maximum depth of the trees provided a significant improvement of the model, 
+# while lowering the learning rate only increased the generalization performance slightly.
+
+# A common approach is to first try random forests, which work quite robustly. 
+# If random forests work well, but prediction time is at a premium(预测时间太长), 
+# or it is important to squeeze out the last percentage of accuracy from the machine learning model(或者机器学习模型精度也很重要), 
+# moving to gradient boosting often helps.
+
+# If you want to apply gradient boosting to a large scale problem, 
+# it might be worth looking into the xgboost package and its python interface, 
+# which at the time of writing is faster than the scikit-learn implementation of gradient boosting on many datasets.
+
+# xgboost
+# Paper: https://arxiv.org/pdf/1603.02754.pdf  
+# Github: https://github.com/dmlc/xgboost
+# XGBoost算法原理小结: https://baijiahao.baidu.com/s?id=1620689507114988717&wfr=spider&for=pc
+# XGBoost与GDBT的区别
+# 1) XGBoost生成CART树考虑了树的复杂度，GDBT未考虑，GDBT在树的剪枝步骤中考虑了树的复杂度
+# 2) XGBoost是拟合上一轮损失函数的二阶导展开，GDBT是拟合上一轮损失函数的一阶导展开，因此，XGBoost的准确性更高，且满足相同的训练效果，需要的迭代次数更少
+# 3) XGBoost与GDBT都是逐次迭代来提高模型性能，但是XGBoost在选取最佳切分点时可以开启多线程进行，大大提高了运行速度
+
+# XGBoost workshop video by 陈天奇: http://datascience.la/xgboost-workshop-and-meetup-talk-with-tianqi-chen/
+# 机器学习科研的十年(陈天奇): https://zhuanlan.zhihu.com/p/74249758
+# XGBoost documents: https://xgboost.readthedocs.io/en/latest/build.html#building-on-osx
+# XGBoost demos: https://github.com/dmlc/xgboost/tree/master/demo
+# XGBoost原理以及python的实现: https://www.jianshu.com/p/2e07e4186cfe
+# XGBoost——机器学习（理论+图解+安装方法+python代码）: https://blog.csdn.net/huacha__/article/details/81029680
+
+print("\n---- XGBoost - load_iris dataset example ----")
+
+# from sklearn.datasets import load_iris
+# from sklearn.model_selection import train_test_split
+# import xgboost as xgb
+# from sklearn import metrics
+
+# 导入鸢尾花的数据
+iris = load_iris()
+# 特征数据
+data = iris.data[:100] # 有4个特征
+# 标签
+label = iris.target[:100]
+
+# 提取训练集和测试集
+# random_state：是随机数的种子。
+train_x, test_x, train_y, test_y = train_test_split(data, label, random_state=0)
+dtrain = xgb.DMatrix(train_x, label = train_y)
+dtest = xgb.DMatrix(test_x)
+
+# 参数设置
+params={'booster':'gbtree',
+    'objective': 'binary:logistic',
+    'eval_metric': 'auc',
+    'max_depth':4,
+    'lambda':10,
+    'subsample':0.75,
+    'colsample_bytree':0.75,
+    'min_child_weight':2,
+    'eta': 0.025,
+    'seed':0,
+    'nthread':8,
+     'silent':1}
+
+watchlist = [(dtrain,'train')]
+
+bst=xgb.train(params,dtrain,num_boost_round=100,evals=watchlist)
+ypred=bst.predict(dtest)
+
+# 设置阈值, 输出一些评价指标
+# 0.5为阈值，ypred >= 0.5输出0或1
+y_pred = (ypred >= 0.5)*1
+
+# ROC曲线下与坐标轴围成的面积
+print ('AUC: %.4f' % metrics.roc_auc_score(test_y,ypred))
+# 准确率
+print ('\nXGBoost - load_iris dataset - ACC: %.4f' % metrics.accuracy_score(test_y,y_pred))
+print ('\nXGBoost - load_iris dataset - Recall: %.4f' % metrics.recall_score(test_y,y_pred))
+# 精确率和召回率的调和平均数
+print ('\nXGBoost - load_iris dataset - F1-score: %.4f' %metrics.f1_score(test_y,y_pred))
+print ('\nXGBoost - load_iris dataset - Precesion: %.4f' %metrics.precision_score(test_y,y_pred))
+# metrics.confusion_matrix(test_y,y_pred)
+
+
+# Strengths, weaknesses and parameters
+# Gradient boosted decision trees are among the most powerful and widely used models for supervised learning.
+# Their main drawback is that they require careful tuning of the parameters, and may take a long time to train.
+
+# The main parameters of the gradient boosted tree models are the number of trees n_estimators, and the learning_rate, 
+# which controls how much each tree is allowed to correct the mistakes of the previous trees.
+# These two parameters are highly interconnected, as a lower learning_rate means that more trees are needed to build a model 
+# of similar complexity. In contrast to random forests, where higher n_estimators is always better, increasing n_estimators i
+# n gradient boosting leads to a more complex model, which may lead to overfitting.
+# A common practice is to fit n_estimators depending on the time and memory budget, and then search over different learning_rates.
+
+# Another important parameter is max_depth, which is usually very low for gradient boosted models, often not deeper than five splits.
 
 
 
 
+## 2.3.7 Kernelized Support Vector Machines  核支持向量机
+# 
+
+print("\n---- Kernelized Support Vector Machines - breast_cancer dataset example ----")
+
+# from sklearn.svm import SVC 
+
+X_train, X_test, y_train, y_test = train_test_split(
+    cancer.data, cancer.target, random_state=0)
+
+# default: C=1.0, cache_size=200, class_weight=None, coef0=0.0, decision_function_shape='ovr', degree=3, 
+# gamma='auto_deprecated', kernel='rbf', max_iter=-1, probability=False, random_state=None, shrinking=True, tol=0.001, verbose=False
+svc = SVC()
+svc.fit(X_train, y_train)
+print("\nKernelized Support Vector Machines(default) - SVC configuration:\n", svc)
+print("\nKernelized Support Vector Machines(default) - breast_cancer dataset - Accuracy on training set: {:.2f}".format(svc.score(X_train, y_train)))
+print("\nKernelized Support Vector Machines(default) - breast_cancer dataset - Accuracy on test set: {:.2f}".format(svc.score(X_test, y_test)))
+
+# Result:
+# Kernelized Support Vector Machines - breast_cancer dataset - Accuracy on training set: 1.00
+# Kernelized Support Vector Machines - breast_cancer dataset - Accuracy on test set: 0.63
+
+# set gamma='scale'
+svc = SVC(gamma='scale')
+svc.fit(X_train, y_train)
+print("\nKernelized Support Vector Machines(gamma='scale') - SVC configuration:\n", svc)
+print("\nKernelized Support Vector Machines(gamma='scale') - breast_cancer dataset - Accuracy on training set: {:.2f}".format(svc.score(X_train, y_train)))
+print("\nKernelized Support Vector Machines(gamma='scale') - breast_cancer dataset - Accuracy on test set: {:.2f}".format(svc.score(X_test, y_test)))
+
+# Result:
+# Kernelized Support Vector Machines(gamma='scale') - breast_cancer dataset - Accuracy on training set: 0.90
+# Kernelized Support Vector Machines(gamma='scale') - breast_cancer dataset - Accuracy on test set: 0.94
+
+
+# Preprocessing data for SVMs
+# By rescaling each feature, so that they are approximately on the same scale.
+
+print("\n---- Kernelized Support Vector Machines(scale the data between zero and one) - breast_cancer dataset example ----")
+
+# Compute the minimum value per feature on the training set
+min_on_training = X_train.min(axis=0)
+# Compute the range of each feature (max - min) on the training set
+range_on_training = (X_train - min_on_training).max(axis=0)
+
+# subtract the min, divide by range
+# afterward, min=0 and max=1 for each feature
+X_train_scaled = (X_train - min_on_training) / range_on_training
+print("\nKernelized Support Vector Machines(data-scaled) - Minimum for each feature:\n", X_train_scaled.min(axis=0))
+print("\nKernelized Support Vector Machines(data-scaled) - Maximum for each feature:\n", X_train_scaled.max(axis=0))
+
+# use THE SAME transformation on the test set,
+# using min and range of the training set. See Chapter 3 (unsupervised learning) for details.
+X_test_scaled = (X_test - min_on_training) / range_on_training
+
+# default: C=1.00
+svc = SVC()
+svc.fit(X_train_scaled, y_train)
+print("\nKernelized Support Vector Machines(default,data-scaled) - SVC configuration:\n", svc)
+print("\nKernelized Support Vector Machines(default,data-scaled) - breast_cancer dataset - Accuracy on training set: {:.3f}".format(svc.score(X_train_scaled, y_train)))
+print("\nKernelized Support Vector Machines(default,data-scaled) - breast_cancer dataset - Accuracy on test set: {:.3f}".format(svc.score(X_test_scaled, y_test)))
+
+# Result:
+# Kernelized Support Vector Machines(default,data-scaled) - breast_cancer dataset - Accuracy on training set: 0.948
+# Kernelized Support Vector Machines(default,data-scaled) - breast_cancer dataset - Accuracy on test set: 0.951
+
+# Scaling the data made a huge difference! Now we are actually in an underfitting regime, where training and test set performance are quite similar. 
+# From here, we can try increasing either C or gamma to fit a more complex model:
+
+# Set C=1000
+svc = SVC(C=1000)
+svc.fit(X_train_scaled, y_train)
+print("\nKernelized Support Vector Machines(C=1000,data-scaled) - SVC configuration:\n", svc)
+print("\nKernelized Support Vector Machines(C=1000,data-scaled) - breast_cancer dataset - Accuracy on training set: {:.3f}".format(svc.score(X_train_scaled, y_train)))
+print("\nKernelized Support Vector Machines(C=1000,data-scaled) - breast_cancer dataset - Accuracy on test set: {:.3f}".format(svc.score(X_test_scaled, y_test)))
+
+# Strengths, weaknesses and parameters
+# 1) Kernelized support vector machines are very powerful models and perform very well on a variety of datasets.
+# 2) SVMs don’t scale very well with the number of samples. 
+# Running on data with up to 10000 samples might work well, but working with datasets of size 100000 or more can become challenging in terms of runtime and memory usage.
+# 3) Another downside of SVMs is that they require careful preprocessing of the data and tuning of the parameters.
+# 4) The important parameters in kernel SVMs are the regularization parameter C, the choice of the kernel, and the kernel-specific parameters. 
 
 
 
 
+## Neural Networks (Deep Learning)
+# Computing a series of weighted sums is mathematically the same as computing just one weighted sum, so to make this model truly more powerful than a linear model, 
+# there is one extra trick we need. 
+# 
+# After computing a weighted sum for each hidden unit, a non-linear function is applied to the result, usually:
+# 1) the rectifying nonlinearity (also known as rectified linear unit or relu) 
+# or:
+# 2) the tangens hyperbolicus (tanh). 
+# The result of this function is then used in the weighted sum that computes the output y.
+# We call this functions as the activation functions.
 
+
+
+# Tuning Neural Networks
+
+print("\n---- Neural Networks - breast_cancer dataset example ----")
+
+# from sklearn.neural_network import MLPClassifier
+
+print("\nNeural Networks - breast_cancer dataset per-feature maxima:\n{}".format(cancer.data.max(axis=0)))
+X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, random_state=0)
+mlp = MLPClassifier(random_state=42)
+mlp.fit(X_train, y_train)
+
+print("\nNeural Networks - breast_cancer dataset - MLPClassifier configuration:\n",mlp)
+print("\nNeural Networks - breast_cancer dataset - Accuracy on training set: {:.2f}".format(mlp.score(X_train, y_train)))
+print("\nNeural Networks - breast_cancer dataset - Accuracy on test set: {:.2f}".format(mlp.score(X_test, y_test)))
+
+# Result:
+# Neural Networks - breast_cancer dataset - Accuracy on training set: 0.94
+# Neural Networks - breast_cancer dataset - Accuracy on test set: 0.92
+# MLP的精度还行，但没有其他模型好，原因可能在于数据的缩放
+# 神经网络也要求所有输入特征的变化范围相似，最理想的情况是均值为0，方差为1
+# 以下我们将人工完成数据的缩放，但在第3章将会介绍用StandardScaler自动完成
+
+
+
+# data-scaled
+# compute the mean value per feature on the training set
+mean_on_train = X_train.mean(axis=0)
+# compute the standard deviation of each feature on the training set
+std_on_train = X_train.std(axis=0)
+
+# subtract the mean, and scale by inverse standard deviation
+# afterward, mean=0 and std=1
+X_train_scaled = (X_train - mean_on_train) / std_on_train
+# use THE SAME transformation (using training mean and std) on the test set
+X_test_scaled = (X_test - mean_on_train) / std_on_train
+
+mlp = MLPClassifier(random_state=0)
+mlp.fit(X_train_scaled, y_train)
+print("\nNeural Networks - breast_cancer dataset(data-scaled) - MLPClassifier configuration:\n",mlp)
+print("\nNeural Networks - breast_cancer dataset(data-scaled) - Accuracy on training set: {:.2f}".format(mlp.score(X_train_scaled, y_train)))
+print("\nNeural Networks - breast_cancer dataset(data-scaled) - Accuracy on test set: {:.2f}".format(mlp.score(X_test_scaled, y_test)))
+
+# Result:
+# Neural Networks - breast_cancer dataset(data-scaled) - Accuracy on training set: 0.99
+# Neural Networks - breast_cancer dataset(data-scaled) - Accuracy on test set: 0.97
+
+# 数据缩放后结果好很多，不过模型给出了一个警告：
+# ConvergenceWarning: Stochastic Optimizer: Maximum iterations (200) reached and the optimization hasn't converged yet.
+# 告诉我们已经达到了最大迭代次数，这是用于学习模型的adam算法的一部分
+
+# set max_iter=1000   
+mlp = MLPClassifier(max_iter=1000, random_state=0)
+mlp.fit(X_train_scaled, y_train)
+print("\nNeural Networks - breast_cancer dataset(data-scaled, max_iter=1000) - MLPClassifier configuration:\n",mlp)
+print("\nNeural Networks - breast_cancer dataset(data-scaled, max_iter=1000) - Accuracy on training set: {:.2f}".format(mlp.score(X_train_scaled, y_train)))
+print("\nNeural Networks - breast_cancer dataset(data-scaled, max_iter=1000) - Accuracy on test set: {:.2f}".format(mlp.score(X_test_scaled, y_test)))
+
+# Result:
+# Neural Networks - breast_cancer dataset(data-scaled, max_iter=1000) - Accuracy on training set: 1.00
+# Neural Networks - breast_cancer dataset(data-scaled, max_iter=1000) - Accuracy on test set: 0.97
+
+# 增加迭代次数仅提高了训练集性能，但没有提高泛化性能
+# 下面我们可以尝试降低模型复杂度来提升泛化性能
+
+# set alpha=1 (default: alpha=0.0001)
+# 向权重添加更强的正则化
+mlp = MLPClassifier(max_iter=1000, alpha=1, random_state=0)
+mlp.fit(X_train_scaled, y_train)
+print("\nNeural Networks - breast_cancer dataset(data-scaled, max_iter=1000, alpha=1) - MLPClassifier configuration:\n",mlp)
+print("\nNeural Networks - breast_cancer dataset(data-scaled, max_iter=1000, alpha=1) - Accuracy on training set: {:.2f}".format(mlp.score(X_train_scaled, y_train)))
+print("\nNeural Networks - breast_cancer dataset(data-scaled, max_iter=1000, alpha=1) - Accuracy on test set: {:.2f}".format(mlp.score(X_test_scaled, y_test)))
+
+# Result:
+# Neural Networks - breast_cancer dataset(data-scaled, max_iter=1000, alpha=1) - Accuracy on training set: 0.99
+# Neural Networks - breast_cancer dataset(data-scaled, max_iter=1000, alpha=1) - Accuracy on test set: 0.97
+
+
+# 虽然 MLPClassifier 和 MLPRegressor 为最常见的神经网络结构提供了易于使用的接口，但它们只包含神经网络潜在应用的一部分
+# 使用更灵活或更大的模型建议使用除了scikit-learn之外的深度学习库
+# 对于Python用户而言这些深度学习库是：keras, lasagna, Tensorflow
+
+
+# Strengths, weaknesses and parameters
+# 1) Neural networks have re-emerged as state of the art models in many applications of machine learning. 
+# One of their main advantages is that they are able to capture information contained in large amounts of data and build incredibly complex models.
+# 2) Downsides: neural networks, in particular the large and powerful ones, often take a long time to train. 
+# 3) A common way to adjust parameters in a neural network is to first create a network that is large enough to overfit, making sure that the task can actually be learned by the network. 
+# Once you know the training data can be learned, either shrink the network or increase alpha to add regularization, which will improve generalization performance.
+
+
+
+## 2.4 Uncertainty estimates from classifiers
+# 
 
 

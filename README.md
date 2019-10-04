@@ -247,6 +247,30 @@ Because solver="liblinear" can support "l1" penalty.
 
 ------------------------------------
 
+BUG FIX 2.7
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/svm/base.py:193: FutureWarning: The default value of gamma will change from 'auto' to 'scale' in version 0.22 to account better for unscaled features. Set gamma explicitly to 'auto' or 'scale' to avoid this warning.
+  "avoid this warning.", FutureWarning)
+
+from sklearn.svm import SVC 
+
+X_train, X_test, y_train, y_test = train_test_split(
+    cancer.data, cancer.target, random_state=0)
+
+svc = SVC()
+
+svc.fit(X_train, y_train)
+
+......
+
+---------
+
+Change "svc = SVC()" to:
+
+svc = SVC(gamma='scale')
+
+------------------------------------
+
 
 
 
