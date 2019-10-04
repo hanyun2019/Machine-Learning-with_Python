@@ -13,6 +13,7 @@ from sklearn.datasets import load_boston
 from sklearn.datasets import make_blobs
 from sklearn.datasets import load_iris
 from sklearn.datasets import make_moons
+from sklearn.datasets import make_circles
 
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -1305,7 +1306,6 @@ print("\nNeural Networks - breast_cancer dataset - Accuracy on test set: {:.2f}"
 # 以下我们将人工完成数据的缩放，但在第3章将会介绍用StandardScaler自动完成
 
 
-
 # data-scaled
 # compute the mean value per feature on the training set
 mean_on_train = X_train.mean(axis=0)
@@ -1374,6 +1374,155 @@ print("\nNeural Networks - breast_cancer dataset(data-scaled, max_iter=1000, alp
 
 
 ## 2.4 Uncertainty estimates from classifiers
+## 2.4.1 The Decision Function
+# There are two different functions in scikit-learn that can be used to obtain uncertainty estimates from classifiers:
+# decision_function and predict_proba.
+
+print("\n---- Uncertainty estimates from classifiers(the Decision Function) ----")
+
+# from sklearn.ensemble import GradientBoostingClassifier
+# from sklearn.datasets import make_circles
+
+X, y = make_circles(noise=0.25, factor=0.5, random_state=1)
+# print("\nX = ",X)
+# print("\ny = ",y)
+
+
+# we rename the classes "blue" and "red" for illustration purposes:
+y_named = np.array(["blue", "red"])[y]
+print("\ny_named = ",y_named)
+
+# we can call train_test_split with arbitrarily many arrays;
+# all will be split in a consistent manner
+X_train, X_test, y_train_named, y_test_named, y_train, y_test = train_test_split(X, y_named, y, random_state=0)
+
+# build the gradient boosting model
+gbrt = GradientBoostingClassifier(random_state=0)
+gbrt.fit(X_train, y_train_named)
+print("\nUncertainty estimates from classifiers - GradientBoostingClassifier(random_state=0):\n",gbrt)
+
+# The Decision Function
+print("\nX.shape: ", X.shape)
+print("\ny.shape: ", y.shape)
+
+print("\nX_train.shape: ", X_train.shape)
+print("\nX_test.shape: ", X_test.shape)
+print("\nDecision function shape: ", gbrt.decision_function(X_test).shape)
+
+# show the first few entries of decision_function
+print("\nDecision function [:12]: ", gbrt.decision_function(X_test)[:12])
+
+print("\nThresholded decision function:\n", gbrt.decision_function(X_test) > 0)
+print("\nPredictions:\n", gbrt.predict(X_test))
+
+# make the boolean True/False into 0 and 1
+greater_zero = (gbrt.decision_function(X_test) > 0).astype(int)
+# use 0 and 1 as indices into classes_
+pred = gbrt.classes_[greater_zero]
+# pred is the same as the output of gbrt.predict
+print("\npred is equal to predictions:", np.all(pred == gbrt.predict(X_test)))
+
+decision_function = gbrt.decision_function(X_test)
+print("\nDecision function minimum: {:.2f} maximum: {:.2f}".format(np.min(decision_function), np.max(decision_function)))
+
+
+# 2.4.2 Predicting Probabilities
+print("\n---- Uncertainty estimates from classifiers(Predicting Probabilities) ----")
+print("\nShape of probabilities:", gbrt.predict_proba(X_test).shape)
+
+# show the first few entries of predict_proba
+print("\nPredicted probabilities: ")
+print(gbrt.predict_proba(X_test[:12]))
+
+# The scikit-learn website has a great comparison of many models, and how their uncertainty estimates look like.
+# http://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html
+
+
+## 2.4.3 Uncertainty in multiclass classification
+print("\n---- Uncertainty estimates from classifiers(multiclass classification) ----")
+
+# from sklearn.datasets import load_iris
+
+iris = load_iris()
+X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target, random_state=42)
+gbrt = GradientBoostingClassifier(learning_rate=0.01, random_state=0)
+gbrt.fit(X_train, y_train)
+print("\nUncertainty estimates from classifiers(multiclass classification) - GradientBoostingClassifier(learning_rate=0.01, random_state=0):\n",gbrt)
+
+print("\nUncertainty estimates from classifiers(multiclass classification) - Decision function shape:", gbrt.decision_function(X_test).shape)
+# plot the first few entries of the decision function
+print("\nUncertainty estimates from classifiers(multiclass classification) - Decision function:")
+print(gbrt.decision_function(X_test)[:12, :])
+
+print("\nUncertainty estimates from classifiers(multiclass classification) - Argmax of decision function:")
+print(np.argmax(gbrt.decision_function(X_test), axis=1))
+print("\nUncertainty estimates from classifiers(multiclass classification) - Predictions:")
+print(gbrt.predict(X_test))
+
+# show the first few entries of predict_proba
+print("\nUncertainty estimates from classifiers(multiclass classification) - Predicted probabilities:")
+print(gbrt.predict_proba(X_test)[:6])
+# show that sums across rows are one
+print("\nUncertainty estimates from classifiers(multiclass classification) - Sums:", gbrt.predict_proba(X_test)[:6].sum(axis=1))
+
+print("\nUncertainty estimates from classifiers(multiclass classification) - Argmax of predicted probabilities:")
+print(np.argmax(gbrt.predict_proba(X_test), axis=1))
+print("\nUncertainty estimates from classifiers(multiclass classification) - Predictions:")
+print(gbrt.predict(X_test))
+
+
+logreg = LogisticRegression()
+# represent each target by its class name in the iris dataset
+named_target = iris.target_names[y_train]
+logreg.fit(X_train, named_target)
+print("\n LogisticRegression() - unique classes in training data:", logreg.classes_)
+print("\n LogisticRegression() - predictions:", logreg.predict(X_test)[:10])
+argmax_dec_func = np.argmax(logreg.decision_function(X_test), axis=1)
+print("\nLogisticRegression() - argmax of decision function:", argmax_dec_func[:10])
+print("\nLogisticRegression() - argmax combined with classes_:",
+      logreg.classes_[argmax_dec_func][:10])
+
+
+
+## 2.5 Summary and Outlook
+# Here is a quick summary of when to use which model:
+
+# Nearest neighbors: for small datasets, good as a baseline, easy to explain.
+
+# Linear models: Go-to as a first algorithm to try, good for very large datasets, good for very high-dimensional data.
+
+# Naive Bayes: Only for classification. Even faster than linear models, good for very large, high-dimensional data. 
+# Often less accurate than linear models.
+
+# Decision trees: Very fast, don’t need scaling of the data, can be visualized and easily explained.
+
+# Random forests: Nearly always perform better than a single decision tree, very robust and powerful. Don’t need scaling of data. 
+# Not good for very high-dimensional sparse data.
+
+# Gradient Boosted Decision Trees: Often slightly more accurate than random forest. Slower to train but faster to predict than random forest, 
+# and smaller in memory. Need more parameter tuning than random forest.
+
+# Support Vector Machines: Powerful for medium-sized datasets of features with similar meaning. Needs scaling of data, sensitive to parameters.
+
+# Neural Networks: Can build very complex models, in particular for large datasets. Sensitive to scaling of the data, and to the choice of parameters. 
+# Large models need a long time to train.
+
+# When working with a new dataset, it is in general a good idea to start with a simple model:
+# such as a linear model, naive Bayes or nearest neighbors and see how far you can get. 
 # 
+# After understanding more about the data, you can consider moving to an algorithm that can build more complex models, 
+# such as random forests, gradient boosting, SVMs or neural networks.
+
+
+
+
+
+
+
+
+
+
+
+
 
 
