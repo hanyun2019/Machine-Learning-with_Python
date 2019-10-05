@@ -271,6 +271,23 @@ svc = SVC(gamma='scale')
 
 ------------------------------------
 
+BUG FIX 3.1
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/svm/base.py:193: FutureWarning: The default value of gamma will change from 'auto' to 'scale' in version 0.22 to account better for unscaled features. Set gamma explicitly to 'auto' or 'scale' to avoid this warning.
+
+So as: 
+
+svm = SVC()
+
+Change to:
+
+svm = SVC(gamma='auto')
+
+------------------------------------
+
+
+
+
 
 
 

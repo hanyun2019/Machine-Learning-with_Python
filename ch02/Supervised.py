@@ -1115,6 +1115,10 @@ print("\nGradient Boosted Regression Trees(learning_rate=0.01) - breast_cancer d
 # XGBoost原理以及python的实现: https://www.jianshu.com/p/2e07e4186cfe
 # XGBoost——机器学习（理论+图解+安装方法+python代码）: https://blog.csdn.net/huacha__/article/details/81029680
 
+# XGBoost参数调优完全指南（附Python代码）：
+# https://www.cnblogs.com/mfryf/p/6293814.html
+# https://github.com/aarshayj/Analytics_Vidhya/tree/master/Articles/Parameter_Tuning_XGBoost_with_Example
+
 print("\n---- XGBoost - load_iris dataset example ----")
 
 # from sklearn.datasets import load_iris
@@ -1152,6 +1156,8 @@ params={'booster':'gbtree',
 watchlist = [(dtrain,'train')]
 
 bst=xgb.train(params,dtrain,num_boost_round=100,evals=watchlist)
+print("\nXGBoost configuration:\n",bst)
+print("\nXGBoost params:\n",params)
 ypred=bst.predict(dtest)
 
 # 设置阈值, 输出一些评价指标
