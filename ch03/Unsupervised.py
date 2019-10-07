@@ -1002,6 +1002,11 @@ print("\nARI: {:.2f}".format(adjusted_rand_score(labels_agg, labels_km)))
 
 
 ## 3.6 Summary and Outlook
+# We looked at three clustering algorithms, k-Means, DBSCAN and Agglomerative Clustering. 
+# All three have a way of controlling the granularity of clustering. 
+# k-Means and Agglomerative Clustering allow you to directly specify the number of desired clusters,
+#  while DBSCAN lets you define proximity using the eps parameter, which indirectly influences cluster size.
+
 # This chapter introduced a range of unsupervised learning algorithms that can be applied for exploratory data analysis and preprocessing. 
 # Having the right representation of the data is often crucial for supervised or unsupervised learning to succeed, 
 # and preprocessing and decomposition methods play an important part in data preparation.
