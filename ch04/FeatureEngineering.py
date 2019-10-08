@@ -8,6 +8,7 @@ import mglearn
 import os
 
 from sklearn.datasets import load_boston
+from sklearn.datasets import load_breast_cancer
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -21,6 +22,10 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVR
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import Ridge
+from sklearn.feature_selection import SelectPercentile
+from sklearn.feature_selection import SelectFromModel
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import RFE
 
 # The question of how to represent your data best for a particular application is known as feature engineering, 
 # and it is one of the main tasks of data scientists and machine learning practitioners trying to solve real-world problems. 
@@ -542,6 +547,208 @@ print("\nScore with interactions(RandomForestRegressor): {:.3f}".format(rf.score
 
 # You can see that even without additional features, the random forest beats the performance of Ridge. 
 # Adding interactions and polynomials actually decreases performance slightly.
+
+
+
+## 4.4 Univariate Nonlinear Transformations     单变量非线性变换
+#
+print("\n----------- Univariate Nonlinear Transformations -----------")
+
+rnd = np.random.RandomState(0)
+X_org = rnd.normal(size=(1000, 3))
+w = rnd.normal(size=3)
+
+X = rnd.poisson(10 * np.exp(X_org))
+y = np.dot(X_org, w)
+
+print("\nNumber of feature appearances:\n{}".format(np.bincount(X[:, 0])))
+bins = np.bincount(X[:, 0])
+# plt.bar(range(len(bins)), bins, color='grey')
+# plt.ylabel("Number of appearances")
+# plt.xlabel("Value")
+
+# from sklearn.linear_model import Ridge
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+score = Ridge().fit(X_train, y_train).score(X_test, y_test)
+print("\nTest score(Ridge): {:.3f}".format(score))
+# Result:
+# Test score: 0.622
+
+# 你可以从相对较小的R^2分数中看出：Ridge无法真正捕捉到x和y之间的关系
+# 应用对数变换可能有用
+
+X_train_log = np.log(X_train + 1)
+X_test_log = np.log(X_test + 1)
+# plt.hist(X_train_log[:, 0], bins=25, color='gray')
+# plt.ylabel("Number of appearances")
+# plt.xlabel("Value")
+score = Ridge().fit(X_train_log, y_train).score(X_test_log, y_test)
+print("\nTest score(Ridge with logarithmic transformation): {:.3f}".format(score))
+# Result:
+# Test score(Ridge with logarithmic transformation): 0.875
+
+# 对数变换之后，数据分布的不对称性变小，也不再有非常大的异常值
+
+
+# 为数据集和模型的所有组合寻找最佳变换是一种艺术。
+# Finding the transformation that works best for each combination of dataset and model is somewhat of an art. 
+
+# Summary:
+# a) Binning, polynomials and interactions can have a huge influence on how models perform on a given dataset. 
+#    This is in particularly true for less complex models like linear models and naive Bayes.
+# b) Tree-based models on the other hand are often able to discover important interactions themselves, 
+#    and don’t require transforming the data explicitly most of the time.
+# c) Other models like SVMs, nearest neighbors and neural networks might sometimes benefit from using binning, interactions or polynomials, 
+#    but the implications there are usually much less clear than in the case of linear models. 
+
+
+## 4.5 Automatic Feature Selection
+# Automatic Feature Selection:
+# a) Univariate statistics  单变量统计
+# b) model-based selection  基于模型的选择
+# c) iterative selection    迭代选择
+
+## 4.5.1 Univariate statistics  单变量统计
+print("\n----------- Automatic Feature Selection: Univariate statistics on breast_cancer dataset -----------")
+
+# from sklearn.datasets import load_breast_cancer
+# from sklearn.feature_selection import SelectPercentile
+# from sklearn.model_selection import train_test_split
+
+cancer = load_breast_cancer()
+
+# get deterministic random numbers
+rng = np.random.RandomState(42)
+noise = rng.normal(size=(len(cancer.data), 50))
+# add noise features to the data
+# the first 30 features are from the dataset, the next 50 are noise
+X_w_noise = np.hstack([cancer.data, noise])
+
+X_train, X_test, y_train, y_test = train_test_split(X_w_noise, cancer.target, random_state=0, test_size=.5)
+
+# use f_classif (the default) and SelectPercentile to select 50% of features
+select = SelectPercentile(percentile=50)
+select.fit(X_train, y_train)
+# transform training set
+X_train_selected = select.transform(X_train)
+
+print("\nX_train.shape: {}".format(X_train.shape))
+print("\nX_train_selected.shape: {}".format(X_train_selected.shape))
+# Result:
+# X_train.shape: (284, 80)
+# X_train_selected.shape: (284, 40)
+
+# As you can see, the number of features was reduced from 80 to 40 (50 percent of the original number of features). 
+# We can find out which features have been selected using the get_support method, which returns a boolean mask of the selected features:
+mask = select.get_support()
+print("\nmask:\n",mask)
+# Result:
+# mask:
+#  [ True  True  True  True  True  True  True  True  True False  True False
+#   True  True  True  True  True  True False False  True  True  True  True
+#   True  True  True  True  True  True False False False  True False  True
+#  False False  True False False False False  True False False  True False
+#  False  True False  True False False False False False False  True False
+#   True False False False False  True False  True False False False False
+#   True  True False  True False False False False]
+
+# visualize the mask. black is True, white is False
+# plt.matshow(mask.reshape(1, -1), cmap='gray_r')
+# plt.xlabel("Sample index")
+# plt.yticks(())
+
+# As you can see from the visualization of the mask above, most of the selected features are the original features, 
+# and most of the noise features were removed. However, the recovery of the original features is not perfect.
+
+# Let’s compare the performance of logistic regression on all features against the performance using only the selected features:
+
+# from sklearn.linear_model import LogisticRegression
+
+# transform test data
+X_test_selected = select.transform(X_test)
+
+# lr = LogisticRegression(solver='lbfgs',max_iter=5000)
+lr = LogisticRegression()
+lr.fit(X_train, y_train)
+print("\nScore with all features: {:.3f}".format(lr.score(X_test, y_test)))
+lr.fit(X_train_selected, y_train)
+print("\nScore with only selected features: {:.3f}".format(lr.score(X_test_selected, y_test)))
+# Result:
+# Score with all features: 0.930
+# Score with only selected features: 0.940
+
+# In this case, removing the noise features improved performance, even though some of the original features where lost. 
+
+
+## 4.5.2 model-based selection 
+print("\n----------- Automatic Feature Selection: model-based selection -----------")
+
+# from sklearn.feature_selection import SelectFromModel
+# from sklearn.ensemble import RandomForestClassifier
+
+select = SelectFromModel(
+    RandomForestClassifier(n_estimators=100, random_state=42),
+    threshold="median")
+
+select.fit(X_train, y_train)
+X_train_l1 = select.transform(X_train)
+print("\nX_train.shape: {}".format(X_train.shape))
+print("\nX_train_l1.shape: {}".format(X_train_l1.shape))
+# Result: 
+
+mask = select.get_support()
+# visualize the mask. black is True, white is False
+# plt.matshow(mask.reshape(1, -1), cmap='gray_r')
+# plt.xlabel("Sample index")
+# plt.yticks(())
+
+X_test_l1 = select.transform(X_test)
+score = LogisticRegression().fit(X_train_l1, y_train).score(X_test_l1, y_test)
+print("\nTest score: {:.3f}".format(score))
+# Result:
+# Test score: 0.951
+
+
+## 4.5.3 iterative selection
+# In univariate testing, we build used no model, while in model based selection we used a single model to select features. 
+# In iterative feature selection, a series of models is built, with varying numbers of features. 
+
+# One particular method of this kind is recursive feature elimination (RFE) which starts with all features, builds a model, 
+# and discards the least important feature according to the model. 
+# Then, a new model is built, using all but the discarded feature, and so on, until only a pre-specified number of features is left. 
+
+print("\n----------- Automatic Feature Selection: iterative selection -----------")
+
+# from sklearn.feature_selection import RFE
+
+select = RFE(RandomForestClassifier(n_estimators=100, random_state=42),n_features_to_select=40)
+
+select.fit(X_train, y_train)
+# visualize the selected features:
+mask = select.get_support()
+# plt.matshow(mask.reshape(1, -1), cmap='gray_r')
+# plt.xlabel("Sample index")
+# plt.yticks(())
+
+# The feature selection got better compared to the univariate and model based selection, but one feature was still missed. 
+# Running the above code takes significantly longer than the model based selection, because a random forest model is trained 40 times, 
+# once for each feature that is dropped.
+X_train_rfe = select.transform(X_train)
+X_test_rfe = select.transform(X_test)
+
+score = LogisticRegression().fit(X_train_rfe, y_train).score(X_test_rfe, y_test)
+print("\nTest score(the random forest model): {:.3f}".format(score))
+# Result:
+# Test score(the random forest model): 0.951
+
+# We can also use the model used inside the RFE to make predictions. This uses only the feature set that was selected:
+print("\nTest score(the model used inside the RFE): {:.3f}".format(select.score(X_test, y_test)))
+# Result:
+# Test score(the model used inside the RFE): 0.951
+
+
+
 
 
 
