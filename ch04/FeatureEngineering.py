@@ -7,6 +7,8 @@ from preamble import *
 import mglearn
 import os
 
+from sklearn.datasets import load_boston
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
@@ -15,6 +17,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.svm import SVR
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.linear_model import Ridge
 
 # The question of how to represent your data best for a particular application is known as feature engineering, 
 # and it is one of the main tasks of data scientists and machine learning practitioners trying to solve real-world problems. 
@@ -328,16 +334,15 @@ print("\nX_binned.shape: {}".format(X_binned.shape))
 # Result:
 # X_binned.shape: (120, 10)
 
-line_binned = encoder.transform(np.digitize(line, bins=bins))
 
+line_binned = encoder.transform(np.digitize(line, bins=bins))
 reg = LinearRegression().fit(X_binned, y)
 # plt.plot(line, reg.predict(line_binned), label='linear regression binned')
 
 reg = DecisionTreeRegressor(min_samples_split=3).fit(X_binned, y)
 # plt.plot(line, reg.predict(line_binned), label='decision tree binned')
-
 # plt.plot(X[:, 0], y, 'o', c='k')
-# plt.vlines(kb.bin_edges_[0], -3, 3, linewidth=1, alpha=.2)
+# plt.vlines(bins, -3, 3, linewidth=1, alpha=.2)
 # plt.legend(loc="best")
 # plt.ylabel("Regression output")
 # plt.xlabel("Input feature")
@@ -351,6 +356,192 @@ reg = DecisionTreeRegressor(min_samples_split=3).fit(X_binned, y)
 # binning can be a great way to increase modelling power.
 
 
+
+## 4.3 Interactions and Polynomials     交互特征和多项式特征
+# Another way to enrich a feature representation, in particular for linear models, 
+# is adding interaction features and polynomial features of the original data. 
+# This kind of feature engineering is often used in statistical modelling, 
+# but also common in many practical machine learning applications.
+print("\n----------- Interactions and Polynomials -----------")
+print("\n----------- Interactions -----------")
+
+# linear models can not only learn offsets, but also slopes. 
+# One way to add a slope to the linear model on the binned data, is to add the original feature.
+X_combined = np.hstack([X, X_binned])
+print("\nX_combined.shape:\n",X_combined.shape)
+print("\nX_combined[:5]:\n",X_combined[:5])
+# Result:
+# X_combined.shape:
+#  (120, 11)
+
+reg = LinearRegression().fit(X_combined, y)
+# line_combined = np.hstack([line, line_binned])
+# plt.plot(line, reg.predict(line_combined), label='linear regression combined')
+# plt.vlines(bins, -3, 3, linewidth=1, alpha=.2)
+# plt.legend(loc="best")
+# plt.ylabel("Regression output")
+# plt.xlabel("Input feature")
+# plt.plot(X[:, 0], y, 'o', c='k')
+
+# Now, the model learned an offset for each bin, together with a slope. 
+# There is the single x-axis feature which has a single slope. 
+# We would rather have a separate slope for each bin! 
+# We can achieve this by adding an interaction or product feature that indicates in which bin a data‐point is and where it lies on the x-axis.
+
+# This feature is a product of the bin-indicator and the original feature. Let’s create this dataset:
+X_product = np.hstack([X_binned, X * X_binned])
+print(X_product.shape)
+print("\nX_product.shape:\n",X_product.shape)
+print("\nX_product[:5]:\n",X_product[:5])
+# Result:
+# X_product.shape:
+# (120, 20)
+
+# This dataset not has 20 features: the indicator for which bin a data point is in, and a product of the original feature and the bin indicator. 
+# You can think of the product feature as a separate copy of the x-axis feature for each bin. 
+# It is the original feature within the bin, and zero everywhere else.
+# 你可以将乘积特征看作每个箱子x轴特征的单独副本，它在箱子内等于原始特征，在其他位置等于零
+
+reg = LinearRegression().fit(X_product, y)
+
+line_product = np.hstack([line_binned, line * line_binned])
+# plt.plot(line, reg.predict(line_product), label='linear regression product')
+# plt.vlines(bins, -3, 3, linewidth=1, alpha=.2)
+# plt.plot(X[:, 0], y, 'o', c='k')
+# plt.ylabel("Regression output")
+# plt.xlabel("Input feature")
+# plt.legend(loc="best")
+
+# As you can see, now each bin has its own offset and slope in this model.
+
+# Using binning is one way to expand a continuous feature. 
+# Another one is to use polynomials of the original features.
+print("\n----------- Polynomials -----------")
+
+# For a given featurex, we might want to considerx ** 2,x ** 3,x ** 4and so on. 
+# This is implemented in PolynomialFeatures in the preprocessing module。
+
+# from sklearn.preprocessing import PolynomialFeatures
+
+# include polynomials up to x ** 10:
+# the default "include_bias=True" adds a feature that's constantly 1
+poly = PolynomialFeatures(degree=10, include_bias=False)
+poly.fit(X)
+X_poly = poly.transform(X)
+print("\nX_poly.shape: {}".format(X_poly.shape))
+print("\nX_poly[:5]: {}".format(X_poly[:5]))
+# Result:
+# X_poly.shape: (120, 10)
+
+# 我们比较 X_poly 和 X 的元素
+print("Entries of X:\n{}".format(X[:5]))
+print("Entries of X_poly:\n{}".format(X_poly[:5]))
+
+# 你可以通过调用 get_feature_names 方法来获取特征的语义，给出每个特征的指数
+print("\nPolynomial feature names:\n{}".format(poly.get_feature_names()))
+# Result:
+# Polynomial feature names:
+# ['x0', 'x0^2', 'x0^3', 'x0^4', 'x0^5', 'x0^6', 'x0^7', 'x0^8', 'x0^9', 'x0^10']
+
+
+# Using polynomial features together with a linear regression model yields the classical model of polynomial regression.
+# 将多项式特征与线性回归模型一起使用，可以得到经典的多项式回归(polynomial regression)模型
+print("\n----------- Polynomials Regression -----------")
+
+reg = LinearRegression().fit(X_poly, y)
+line_poly = poly.transform(line)
+# plt.plot(line, reg.predict(line_poly), label='polynomial linear regression')
+# plt.plot(X[:, 0], y, 'o', c='k')
+# plt.ylabel("Regression output")
+# plt.xlabel("Input feature")
+# plt.legend(loc="best")
+
+# As you can see, polynomial feature yield a very smooth fit on this one-dimensional data. 
+# However, polynomials of high degree tend to behave in extreme ways on the boundaries or in regions of little data.
+
+
+# As a comparison, here is a kernel SVM model learned on the original data, without any transformation:
+
+# from sklearn.svm import SVR
+
+for gamma in [1, 10]:
+    svr = SVR(gamma=gamma).fit(X, y)
+#    plt.plot(line, svr.predict(line), label='SVR gamma={}'.format(gamma))
+
+# plt.plot(X[:, 0], y, 'o', c='k')
+# plt.ylabel("Regression output")
+# plt.xlabel("Input feature")
+# plt.legend(loc="best")
+
+# Using a more complex model, a kernel SVM, 
+# we are able to learn a similarly complex prediction to the polynomial regression without using any transformations of the features.
+
+
+# As a more realistic application of interactions and polynomials, let’s look again at the Boston Housing data set. 
+# We already used polynomial features on this dataset in Chapter 2. 
+# Now let us have a look at how these features were constructed, and at how much the polynomial features help. 
+# First we load the data, and rescale it to be between 0 and 1 using MinMaxScaler.
+print("\n----------- Interactions and Polynomials: the Boston Housing dataset -----------")
+
+# from sklearn.datasets import load_boston
+# from sklearn.model_selection import train_test_split
+# from sklearn.preprocessing import MinMaxScaler
+
+boston = load_boston()
+X_train, X_test, y_train, y_test = train_test_split(boston.data, boston.target, random_state=0)
+
+# rescale data
+scaler = MinMaxScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+poly = PolynomialFeatures(degree=2).fit(X_train_scaled)
+X_train_poly = poly.transform(X_train_scaled)
+X_test_poly = poly.transform(X_test_scaled)
+print("\nX_train.shape: {}".format(X_train.shape))
+print("\nX_train_poly.shape: {}".format(X_train_poly.shape))
+# Result:
+# X_train.shape: (379, 13)
+# X_train_poly.shape: (379, 105)
+
+# The data originally had 13 features, which were expanded into 105 interaction features. 
+# These new features represent all possible interactions between two different original features, as well as the square of each original feature. 
+# degree=2 here means that we look at all features that are the product of up to two original features. 
+# The exact correspondence between input and output features can be found using the get_feature_names method:
+
+print("\nPolynomial feature names:\n{}".format(poly.get_feature_names()))
+# Result:
+# Polynomial feature names:
+# ['1', 'x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10', 'x11', 'x12', 'x0^2', 'x0 x1', 'x0 x2', 'x0 x3', 'x0 x4', 'x0 x5', 'x0 x6', 'x0 x7', 'x0 x8', 'x0 x9', 'x0 x10', 'x0 x11', 'x0 x12', 'x1^2', 'x1 x2', 'x1 x3', 'x1 x4', 'x1 x5', 'x1 x6', 'x1 x7', 'x1 x8', 'x1 x9', 'x1 x10', 'x1 x11', 'x1 x12', 'x2^2', 'x2 x3', 'x2 x4', 'x2 x5', 'x2 x6', 'x2 x7', 'x2 x8', 'x2 x9', 'x2 x10', 'x2 x11', 'x2 x12', 'x3^2', 'x3 x4', 'x3 x5', 'x3 x6', 'x3 x7', 'x3 x8', 'x3 x9', 'x3 x10', 'x3 x11', 'x3 x12', 'x4^2', 'x4 x5', 'x4 x6', 'x4 x7', 'x4 x8', 'x4 x9', 'x4 x10', 'x4 x11', 'x4 x12', 'x5^2', 'x5 x6', 'x5 x7', 'x5 x8', 'x5 x9', 'x5 x10', 'x5 x11', 'x5 x12', 'x6^2', 'x6 x7', 'x6 x8', 'x6 x9', 'x6 x10', 'x6 x11', 'x6 x12', 'x7^2', 'x7 x8', 'x7 x9', 'x7 x10', 'x7 x11', 'x7 x12', 'x8^2', 'x8 x9', 'x8 x10', 'x8 x11', 'x8 x12', 'x9^2', 'x9 x10', 'x9 x11', 'x9 x12', 'x10^2', 'x10 x11', 'x10 x12', 'x11^2', 'x11 x12', 'x12^2']
+
+
+# Let’s compare the performance using Ridge on the data with and without interactions:
+
+# from sklearn.linear_model import Ridge
+
+ridge = Ridge().fit(X_train_scaled, y_train)
+print("\nScore without interactions(Ridge): {:.3f}".format(ridge.score(X_test_scaled, y_test)))
+ridge = Ridge().fit(X_train_poly, y_train)
+print("\nScore with interactions(Ridge): {:.3f}".format(ridge.score(X_test_poly, y_test)))
+# Result:
+# Score without interactions: 0.621
+# Score with interactions: 0.753
+
+# Clearly the interactions and polynomial features gave us a good boost in performance when using Ridge. 
+# When using a more complex model like a random forest, the story is a bit different.
+
+from sklearn.ensemble import RandomForestRegressor
+
+rf = RandomForestRegressor(n_estimators=100).fit(X_train_scaled, y_train)
+print("\nScore without interactions(RandomForestRegressor): {:.3f}".format(rf.score(X_test_scaled, y_test)))
+rf = RandomForestRegressor(n_estimators=100).fit(X_train_poly, y_train)
+print("\nScore with interactions(RandomForestRegressor): {:.3f}".format(rf.score(X_test_poly, y_test)))
+# Result:
+# Score without interactions(RandomForestRegressor): 0.794
+# Score with interactions(RandomForestRegressor): 0.776
+
+# You can see that even without additional features, the random forest beats the performance of Ridge. 
+# Adding interactions and polynomials actually decreases performance slightly.
 
 
 
