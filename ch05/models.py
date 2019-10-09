@@ -10,6 +10,7 @@ import pandas as pd
 
 from sklearn.datasets import make_blobs
 from sklearn.datasets import load_iris
+from sklearn.datasets import load_digits
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -21,6 +22,13 @@ from sklearn.model_selection import GroupKFold
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import ParameterGrid, StratifiedKFold
+from sklearn.dummy import DummyClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import f1_score
+from sklearn.metrics import classification_report
+from sklearn.metrics import precision_recall_curve
+from sklearn.ensemble import RandomForestClassifier
 
 print("\n----------- Model evaluation and improvement -----------")
 
@@ -518,5 +526,294 @@ print("\nCross-validation scores: \n{}".format(scores))
 
 
 
+## 5.3 Evaluation Metrics and Scoring
+print("\n----------- Evaluation Metrics and Scoring -----------")
+
+## 5.3.1 Keep the End Goal in Mind
+
+## 5.3.2 Metrics for Binary Classification      二分类指标
+# Kinds of errors
+# Imbalanced datasets       不平衡数据集
+print("\n----------- Evaluation Metrics and Scoring: Metrics for Binary Classification -----------")
+
+# from sklearn.datasets import load_digits
+digits = load_digits()
+y = digits.target == 9
+print("\ndigits.data.shape:\n",digits.data.shape)
+print("\ndigits.data:\n",digits.data)
+print("\ny.shape:\n",y.shape)
+print("\ny:\n",y)
+print("\ndigits.target.shape:\n",digits.target.shape)
+print("\ndigits.target:\n",digits.target)
+# Result:
+# digits.data.shape:
+#  (1797, 64)
+#
+# digits.data:
+#  [[ 0.  0.  5. ...  0.  0.  0.]
+#  [ 0.  0.  0. ... 10.  0.  0.]
+#  [ 0.  0.  0. ... 16.  9.  0.]
+#  ...
+#  [ 0.  0.  1. ...  6.  0.  0.]
+#  [ 0.  0.  2. ... 12.  0.  0.]
+#  [ 0.  0. 10. ... 12.  1.  0.]]
+#
+# y.shape:
+#  (1797,)
+#
+# y:
+#  [False False False ... False  True False]
+#
+# digits.target.shape:
+#  (1797,)
+#
+# digits.target:
+#  [0 1 2 ... 8 9 8]
+
+
+X_train, X_test, y_train, y_test = train_test_split(digits.data, y, random_state=0)
+
+# from sklearn.dummy import DummyClassifier
+dummy_majority = DummyClassifier(strategy='most_frequent').fit(X_train, y_train)
+pred_most_frequent = dummy_majority.predict(X_test)
+print("\nDummyClassifier configuration:\n",dummy_majority)
+print("\nUnique predicted labels: {}".format(np.unique(pred_most_frequent)))
+print("\nTest score(DummyClassifier): {:.2f}".format(dummy_majority.score(X_test, y_test)))
+# Result:
+# DummyClassifier configuration:
+#  DummyClassifier(constant=None, random_state=None, strategy='most_frequent')
+#
+# Unique predicted labels: [False]
+# Test score(DummyClassifier): 0.90
+
+
+# from sklearn.tree import DecisionTreeClassifier
+tree = DecisionTreeClassifier(max_depth=2).fit(X_train, y_train)
+print("\nDecisionTreeClassifier configuration:\n",tree)
+pred_tree = tree.predict(X_test)
+print("\nTest score(DecisionTreeClassifier): {:.2f}".format(tree.score(X_test, y_test)))
+# Result:
+# DecisionTreeClassifier configuration:
+#  DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=2,
+#                        max_features=None, max_leaf_nodes=None,
+#                        min_impurity_decrease=0.0, min_impurity_split=None,
+#                        min_samples_leaf=1, min_samples_split=2,
+#                        min_weight_fraction_leaf=0.0, presort=False,
+#                        random_state=None, splitter='best')
+#
+# Test score(DecisionTreeClassifier): 0.92
+
+
+# from sklearn.linear_model import LogisticRegression
+dummy = DummyClassifier().fit(X_train, y_train)
+pred_dummy = dummy.predict(X_test)
+print("\ndummy classifier score: {:.2f}".format(dummy.score(X_test, y_test)))
+# dummy classifier score: 0.82
+
+logreg = LogisticRegression(C=0.1).fit(X_train, y_train)
+pred_logreg = logreg.predict(X_test)
+print("\nlogistic regression score: {:.2f}".format(logreg.score(X_test, y_test)))
+# logistic regression score: 0.98
+
+# Clearly accuracy is an inadequate measure to quantify predictive performance in this imbalanced setting. 
+# For the rest of this chapter, we will explore alternative metrics that provide better guidance in selecting models. 
+# In particular, we would like to have metrics that tell us how much better a model is than making “most frequent” predictions or random predictions, 
+# as they are computed in pred_most_frequent and pred_dummy. 
+# If we use a metric to assess our models, it should definitely be able to weed out these nonsense predictions.
+
+
+# Confusion matrices    混淆矩阵
+print("\n----------- Evaluation Metrics and Scoring: Confusion matrices -----------")
+
+# from sklearn.metrics import confusion_matrix
+
+# Let’s inspect the predictions of LogisticRegression above using the confusion_matrix function. 
+# We already stored the predictions on the test set in pred_logreg.
+confusion = confusion_matrix(y_test, pred_logreg)
+print("\nConfusion matrix:\n{}".format(confusion))
+# Confusion matrix:
+# [[401   2]
+#  [  8  39]]
+
+print("\nMost frequent class:")
+print(confusion_matrix(y_test, pred_most_frequent))
+print("\nDummy model:")
+print(confusion_matrix(y_test, pred_dummy))
+print("\nDecision tree:")
+print(confusion_matrix(y_test, pred_tree))
+print("\nLogistic Regression")
+print(confusion_matrix(y_test, pred_logreg))
+# Most frequent class:
+# [[403   0]
+#  [ 47   0]]
+
+# Dummy model:
+# [[366  37]
+#  [ 44   3]]
+
+# Decision tree:
+# [[390  13]
+#  [ 24  23]]
+
+# Logistic Regression
+# [[401   2]
+#  [  8  39]]
+
+
+# from sklearn.metrics import f1_score
+print("\nf1 score most frequent: {:.2f}".format(
+    f1_score(y_test, pred_most_frequent)))
+print("\nf1 score dummy: {:.2f}".format(f1_score(y_test, pred_dummy)))
+print("\nf1 score tree: {:.2f}".format(f1_score(y_test, pred_tree)))
+print("\nf1 score logistic regression: {:.2f}".format(
+    f1_score(y_test, pred_logreg)))
+# f1 score most frequent: 0.00
+# f1 score dummy: 0.10
+# f1 score tree: 0.55
+# f1 score logistic regression: 0.89
+
+# from sklearn.metrics import classification_report
+print("\npred_most_frequent report:\n")
+print(classification_report(y_test, pred_most_frequent, target_names=["not nine", "nine"]))
+print("\npred_dummy report:\n")
+print(classification_report(y_test, pred_dummy, target_names=["not nine", "nine"]))
+print("\npred_logreg report:\n")
+print(classification_report(y_test, pred_logreg, target_names=["not nine", "nine"]))
+# pred_most_frequent report:
+
+#               precision    recall  f1-score   support
+
+#     not nine       0.90      1.00      0.94       403
+#         nine       0.00      0.00      0.00        47
+
+#     accuracy                           0.90       450
+#    macro avg       0.45      0.50      0.47       450
+# weighted avg       0.80      0.90      0.85       450
+
+
+# pred_dummy report:
+
+#               precision    recall  f1-score   support
+
+#     not nine       0.90      0.91      0.90       403
+#         nine       0.14      0.13      0.13        47
+
+#     accuracy                           0.82       450
+#    macro avg       0.52      0.52      0.52       450
+# weighted avg       0.82      0.82      0.82       450
+
+
+# pred_logreg report:
+
+#               precision    recall  f1-score   support
+
+#     not nine       0.98      1.00      0.99       403
+#         nine       0.95      0.83      0.89        47
+
+#     accuracy                           0.98       450
+#    macro avg       0.97      0.91      0.94       450
+# weighted avg       0.98      0.98      0.98       450
+
+
+
+# Taking uncertainty into account
+print("\n----------- Evaluation Metrics and Scoring: Taking uncertainty into account -----------")
+
+X, y = make_blobs(n_samples=(400, 50), cluster_std=[7.0, 2],
+                  random_state=22)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+svc = SVC(gamma=.05).fit(X_train, y_train)
+
+# mglearn.plots.plot_decision_threshold()
+print("\nsvc_predict report(threshold > 0):\n")
+print(classification_report(y_test, svc.predict(X_test)))
+y_pred_lower_threshold = svc.decision_function(X_test) > -.8
+print("\nsvc_predict report(threshold > -0.8):\n")
+print(classification_report(y_test, y_pred_lower_threshold))
+# svc_predict report(threshold > 0):
+
+#               precision    recall  f1-score   support
+
+#            0       0.97      0.89      0.93       104
+#            1       0.35      0.67      0.46         9
+
+#     accuracy                           0.88       113
+#    macro avg       0.66      0.78      0.70       113
+# weighted avg       0.92      0.88      0.89       113
+
+
+# svc_predict report(threshold > -0.8):
+
+#               precision    recall  f1-score   support
+
+#            0       1.00      0.82      0.90       104
+#            1       0.32      1.00      0.49         9
+
+#     accuracy                           0.83       113
+#    macro avg       0.66      0.91      0.69       113
+# weighted avg       0.95      0.83      0.87       113
+
+
+
+# Precision-Recall curves   准确率-召回率曲线
+print("\n----------- Evaluation Metrics and Scoring: Precision-Recall curves -----------")
+
+# from sklearn.metrics import precision_recall_curve
+precision, recall, thresholds = precision_recall_curve(
+    y_test, svc.decision_function(X_test))
+
+# Use more data points for a smoother curve
+X, y = make_blobs(n_samples=(4000, 500), cluster_std=[7.0, 2], random_state=22)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+svc = SVC(gamma=.05).fit(X_train, y_train)
+precision, recall, thresholds = precision_recall_curve(
+    y_test, svc.decision_function(X_test))
+# find threshold closest to zero
+close_zero = np.argmin(np.abs(thresholds))
+# plt.plot(precision[close_zero], recall[close_zero], 'o', markersize=10,
+#          label="threshold zero", fillstyle="none", c='k', mew=2)
+
+# plt.plot(precision, recall, label="precision recall curve")
+# plt.xlabel("Precision")
+# plt.ylabel("Recall")
+# plt.legend(loc="best")
+
+
+# from sklearn.ensemble import RandomForestClassifier
+
+rf = RandomForestClassifier(n_estimators=100, random_state=0, max_features=2)
+rf.fit(X_train, y_train)
+
+# RandomForestClassifier has predict_proba, but not decision_function
+precision_rf, recall_rf, thresholds_rf = precision_recall_curve(
+    y_test, rf.predict_proba(X_test)[:, 1])
+
+# plt.plot(precision, recall, label="svc")
+
+# plt.plot(precision[close_zero], recall[close_zero], 'o', markersize=10,
+#          label="threshold zero svc", fillstyle="none", c='k', mew=2)
+
+# plt.plot(precision_rf, recall_rf, label="rf")
+
+close_default_rf = np.argmin(np.abs(thresholds_rf - 0.5))
+# plt.plot(precision_rf[close_default_rf], recall_rf[close_default_rf], '^', c='k',
+#          markersize=10, label="threshold 0.5 rf", fillstyle="none", mew=2)
+# plt.xlabel("Precision")
+# plt.ylabel("Recall")
+# plt.legend(loc="best")
+
+print("f1_score of random forest: {:.3f}".format(
+    f1_score(y_test, rf.predict(X_test))))
+print("f1_score of svc: {:.3f}".format(f1_score(y_test, svc.predict(X_test))))
+
+from sklearn.metrics import average_precision_score
+ap_rf = average_precision_score(y_test, rf.predict_proba(X_test)[:, 1])
+ap_svc = average_precision_score(y_test, svc.decision_function(X_test))
+print("Average precision of random forest: {:.3f}".format(ap_rf))
+print("Average precision of svc: {:.3f}".format(ap_svc))
+# f1_score of random forest: 0.610
+# f1_score of svc: 0.656
+# Average precision of random forest: 0.660
+# Average precision of svc: 0.666
 
 
