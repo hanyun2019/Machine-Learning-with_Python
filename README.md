@@ -285,6 +285,37 @@ svm = SVC(gamma='auto')
 
 ------------------------------------
 
+BUG FIX 5.1
+
+logreg = LogisticRegression().fit(X_train, y_train)
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/linear_model/logistic.py:432: FutureWarning: Default solver will be changed to 'lbfgs' in 0.22. Specify a solver to silence this warning.
+  
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/linear_model/logistic.py:469: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+
+Change to: 
+
+logreg = LogisticRegression(solver='lbfgs',multi_class='auto').fit(X_train, y_train)
+
+------------------------------------
+
+BUG FIX 5.2
+
+chapter 5.1.3 Leave-one-out cross-validation
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/linear_model/logistic.py:432: FutureWarning: Default solver will be changed to 'lbfgs' in 0.22. Specify a solver to silence this warning.
+
+/Users/eunice/Library/Python/3.7/lib/python/site-packages/sklearn/linear_model/logistic.py:469: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+
+
+add one line to define the LogisticRegression again with : 
+
+logreg = LogisticRegression(solver='lbfgs',multi_class='auto',max_iter=5000)  
+
+------------------------------------
+
+
+
 
 
 
