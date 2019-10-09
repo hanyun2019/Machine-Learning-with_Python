@@ -26,6 +26,7 @@ from sklearn.feature_selection import SelectPercentile
 from sklearn.feature_selection import SelectFromModel
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import RFE
+from sklearn.ensemble import RandomForestRegressor
 
 # The question of how to represent your data best for a particular application is known as feature engineering, 
 # and it is one of the main tasks of data scientists and machine learning practitioners trying to solve real-world problems. 
@@ -749,12 +750,178 @@ print("\nTest score(the model used inside the RFE): {:.3f}".format(select.score(
 
 
 
+## 4.6 Utilizing Expert Knowledge
+# Feature engineering is often an important place to use expert knowledge for a particular application. 
+print("\n----------- Utilizing Expert Knowledge - citibike dataset -----------")
+
+citibike = mglearn.datasets.load_citibike()
+print("\nCiti Bike data - head():\n{}".format(citibike.head()))
+# Result:
+# Citi Bike data:
+# starttime
+# 2015-08-01 00:00:00     3
+# 2015-08-01 03:00:00     0
+# 2015-08-01 06:00:00     9
+# 2015-08-01 09:00:00    41
+# 2015-08-01 12:00:00    39
+# Freq: 3H, Name: one, dtype: int64
+
+# plt.figure(figsize=(10, 3))
+# xticks = pd.date_range(start=citibike.index.min(), end=citibike.index.max(),
+#                        freq='D')
+# plt.xticks(xticks, xticks.strftime("%a %m-%d"), rotation=90, ha="left")
+# plt.plot(citibike, linewidth=1)
+# plt.xlabel("Date")
+# plt.ylabel("Rentals")
+
+# The only feature that we are using in our prediction task is the date and time when a particular number of rentals occurred. 
+# So the input feature is the time, say 2015-08-01 00:00:00, and the output is the number of rentals in the following three hours, 3 in this case 
+# A (surprisingly) common way that dates are stored on computers is using POSIX time, 
+# which is the number of seconds since January 1970 00:00:00. 
+# As a first try, we can use this single integer feature as our data representation:
+
+# extract the target values (number of rentals)
+y = citibike.values
+# convert to POSIX time by dividing by 10**9
+X = citibike.index.astype("int64").values.reshape(-1, 1) // 10**9
+
+# use the first 184 data points for training, the rest for testing
+n_train = 184
+
+# function to evaluate and plot a regressor on a given feature set
+def eval_on_features(features, target, regressor):
+    # split the given features into a training and a test set
+    X_train, X_test = features[:n_train], features[n_train:]
+    # also split the target array
+    y_train, y_test = target[:n_train], target[n_train:]
+    regressor.fit(X_train, y_train)
+    print("Test-set R^2: {:.2f}".format(regressor.score(X_test, y_test)))
+    y_pred = regressor.predict(X_test)
+    y_pred_train = regressor.predict(X_train)
+    # plt.figure(figsize=(10, 3))
+
+    # plt.xticks(range(0, len(X), 8), xticks.strftime("%a %m-%d"), rotation=90,
+    #            ha="left")
+
+    # plt.plot(range(n_train), y_train, label="train")
+    # plt.plot(range(n_train, len(y_test) + n_train), y_test, '-', label="test")
+    # plt.plot(range(n_train), y_pred_train, '--', label="prediction train")
+
+    # plt.plot(range(n_train, len(y_test) + n_train), y_pred, '--',
+    #          label="prediction test")
+    # plt.legend(loc=(1.01, 0))
+    # plt.xlabel("Date")
+    # plt.ylabel("Rentals")
 
 
 
+# from sklearn.ensemble import RandomForestRegressor
+regressor = RandomForestRegressor(n_estimators=100, random_state=0)
+eval_on_features(X, y, regressor)
+# Result: 
+# Test-set R^2: -0.04
+# The predictions on the training set are quite good, as is usual for random forests. 
+# However, for the test set, a constant line is predicted. The R^2 is -0.04, which means that we learned nothing. 
+# What happened?
+
+# The problem lies in the combination of our feature and the random forest. 
+# The value of the POSIX time feature for the test set is outside of the range of the feature values on the training set: 
+# the points in the test set have time stamps that are later than all the points in the training set.
+# Trees, and therefore random forests, can not extrapolate to feature ranges outside the training set.
 
 
+# Clearly we can do better than this. This is where our “expert knowledge” comes in. From looking at the rental figures on the training data, 
+# two factors seem to be very important: the time of day, and the day of the week. So let’s add these two features. 
+# We can’t really learn anything from the POSIX time, so we drop that feature.
 
+# First, let’s use only the hour of the day:
+X_hour = citibike.index.hour.values.reshape(-1, 1)
+eval_on_features(X_hour, y, regressor)
+# Result:
+# Test-set R^2: 0.60
+
+# Now the predictions have the same pattern for each day of the week. The R^2 is already much better, but the predictions clearly miss the weekly pattern. 
+# Now let’s also add the day of the week:
+X_hour_week = np.hstack([citibike.index.dayofweek.values.reshape(-1, 1),
+                         citibike.index.hour.values.reshape(-1, 1)])
+eval_on_features(X_hour_week, y, regressor)
+# Result:
+# Test-set R^2: 0.84
+
+# Now, we have a model that models the periodic behavior considering day of week and time of day. It has an R^2 of 0.84, and show pretty good predictive performance.
+# What this model likely is learning is the mean number of rentals for each combination of weekday and time of day from the first 23 days of August. 
+# This would actually not require a complex model like a random forest.
+# So let’s try with a simpler model, LinearRegression:
+
+# from sklearn.linear_model import LinearRegression
+eval_on_features(X_hour_week, y, LinearRegression())
+# Result:
+# Test-set R^2: 0.13
+
+# Linear Regression works much worse.
+# The reason for this is that we encoded day of the week and time of the day using integers, which are interpreted as categorical variables. 
+# Therefore, the linear model can only learn a linear function of the time of day - and it learned that later in the day, there are more rentals. 
+# However, the patterns are much more complex that that, which we can:
+# capture by interpreting the integers as categorical variables, by transforming them using OneHotEncoder.
+
+enc = OneHotEncoder()
+X_hour_week_onehot = enc.fit_transform(X_hour_week).toarray()
+eval_on_features(X_hour_week_onehot, y, Ridge())
+# Result:
+# Test-set R^2: 0.62
+
+# This gave us a much better match than the continuous feature encoding. 
+# Now, the linear model learns one coefficient for each day of the week, and one coefficient for each time of the day. 
+# That means that the “time of day” pattern is shared over all days of the week, though.
+# Using interaction features, we can allow the model to learn one coefficient for each combination of day and time of day.
+
+poly_transformer = PolynomialFeatures(degree=2, interaction_only=True,
+                                      include_bias=False)
+X_hour_week_onehot_poly = poly_transformer.fit_transform(X_hour_week_onehot)
+lr = Ridge()
+eval_on_features(X_hour_week_onehot_poly, y, lr)
+# Result:
+# Test-set R^2: 0.85
+
+# This transformation finally yields a model that performs similarly well to the random forest.
+# A big benefit of this model is that it is very clear what is learned: one coefficient for each day and time.
+# We can simply plot the coefficients learned by the model, something that would not be possible for the random forest.
+
+# First, we create feature names for the hour and day features:
+hour = ["%02d:00" % i for i in range(0, 24, 3)]
+day = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+features =  day + hour
+
+# Then we name all the interaction feature extracted by the PolynomialFeatures, using the get_feature_names method, 
+# and keep only the feature with non-zero coefficients:
+features_poly = poly_transformer.get_feature_names(features)
+features_nonzero = np.array(features_poly)[lr.coef_ != 0]
+coef_nonzero = lr.coef_[lr.coef_ != 0]
+
+# Now we can visualize the coefficients learned by the linear model:
+
+# plt.figure(figsize=(15, 2))
+# plt.plot(coef_nonzero, 'o')
+# plt.xticks(np.arange(len(coef_nonzero)), features_nonzero, rotation=90)
+# plt.xlabel("Feature name")
+# plt.ylabel("Feature magnitude")
+
+
+## 4.7 Summary and outlook 
+# In this chapter, we discussed how to deal with different data types, in particular with categorical variables.
+
+# We emphasized the importance of representing your data in a way that is suitable for the machine learning algorithm, 
+# for example by one-hot-encoding categorical variables.
+
+# We also discussed the importance of engineering new features, 
+# and the possibility of utilizing expert knowledge in creating derived features from your data.
+
+# In particular linear models might benefit greatly from generating new features via binning and adding polynomials and interactions, 
+# while more complex, nonlinear models like random forests and SVMs might be able to learn more complex tasks without explicitly expanding the feature space.
+
+# In practice, the features that are used, and the match between features and method is often the most important piece in making a machine learning approach work well.
+# Having our data represented in an appropriate way, and knowing which algorithm to use for which task, 
+# the next chapter will focus on evaluating performance of machine learning models and selecting the right parameter settings.
 
 
 
