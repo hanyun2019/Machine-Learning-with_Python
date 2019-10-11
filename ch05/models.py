@@ -29,6 +29,11 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import precision_recall_curve
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import average_precision_score
+from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score
+from sklearn.metrics.scorer import SCORERS
 
 print("\n----------- Model evaluation and improvement -----------")
 
@@ -635,6 +640,18 @@ print("\nConfusion matrix:\n{}".format(confusion))
 # [[401   2]
 #  [  8  39]]
 
+# The output of confusion_matrix is a two by two array, 
+# where the rows correspond to the true classes, 
+# and the columns corresponds to the predicted classes. 
+# Each entry counts for how many data points in the class given by the row the prediction was the class given by the column.
+
+# mglearn.plots.plot_confusion_matrix_illustration()
+# [[401   2]    the rows correspond to the true classes: rows0 - true 'not nine' / row1 - true 'nine' 
+#  [  8  39]]   the columns corresponds to the predicted classes: column0 - predicted 'not nine' / predicted 'nine'
+
+# [[TN   FP]
+#  [FN   TP]]
+
 print("\nMost frequent class:")
 print(confusion_matrix(y_test, pred_most_frequent))
 print("\nDummy model:")
@@ -659,6 +676,24 @@ print(confusion_matrix(y_test, pred_logreg))
 # [[401   2]
 #  [  8  39]]
 
+# 精度: Accuracy = (TP + TN) / (TP + TN + FP + FN)
+# Accuracy is the number of correct prediction (TP and TN) divided by the number of all samples.
+
+# 准确率: Precision = TP / (TP + FP)
+# Precision measures how many of the samples predicted as positive are actually positive.
+
+# 召回率: Recall = TP / (TP + FN) 
+# Recall measures how many of the positive samples are captured by the positive predictions.
+
+# There is a trade-off between optimizing recall and optimizing precision. 
+# You can trivially(微不足道地) obtain a perfect recall if you predict all samples to belong to the positive class - there will be no false negatives, and no true negatives either. 
+# However, predicting all samples as positive will result in many false positives, therefore the precision will be very low. 
+# On the other hand, if you find a model that predicts only the single data point it is most sure about as positive, and the rest as negative, 
+# then precision will be perfect, but recall will be very bad.
+
+# f-分数: F = 2 * (precision * recall)/(precision + recall)
+# This particular variant is also known as the f_1-score. 
+# As it takes precision and recall into account, it can be a better measure than accuracy on imbalanced binary classification datasets.
 
 # from sklearn.metrics import f1_score
 print("\nf1 score most frequent: {:.2f}".format(
@@ -715,8 +750,16 @@ print(classification_report(y_test, pred_logreg, target_names=["not nine", "nine
 # weighted avg       0.98      0.98      0.98       450
 
 
-
 # Taking uncertainty into account
+# The confusion matrix and the classification report provide a very detailed analysis of a particular set of predictions. 
+# However, the predictions themselves already threw away a lot of information that is contained in the model. 
+# As we discusses in Chapter 2, most classifiers provide a decision_function or a predict_proba method to assess degrees of certainty about predictions.
+
+# Making predictions can be seen as thresholding the output of decision_function or predict_proba at a certain fixed point - 
+# in binary classification zero for the decision function and 0.5 for predict_proba.
+
+# Below is an example of an imbalanced binary classification task, with 400 blue points classified against 50 red points.
+
 print("\n----------- Evaluation Metrics and Scoring: Taking uncertainty into account -----------")
 
 X, y = make_blobs(n_samples=(400, 50), cluster_std=[7.0, 2],
@@ -756,7 +799,12 @@ print(classification_report(y_test, y_pred_lower_threshold))
 
 
 # Precision-Recall curves   准确率-召回率曲线
+# As we just discussed, changing the threshold that is used to make a classification decision in a model is 
+# a way to adjust the trade-off of precision and recall for a given classifier. 
+
 print("\n----------- Evaluation Metrics and Scoring: Precision-Recall curves -----------")
+
+print("\n----------- Precision-Recall curves: SVC(gamma=0.05) -----------")
 
 # from sklearn.metrics import precision_recall_curve
 precision, recall, thresholds = precision_recall_curve(
@@ -778,6 +826,10 @@ close_zero = np.argmin(np.abs(thresholds))
 # plt.ylabel("Recall")
 # plt.legend(loc="best")
 
+
+# Different classifiers can work well in different parts of the curve, that is at different operating points. 
+# Below we compare the SVC we trained to a random forest trained on the same dataset.
+print("\n----------- Precision-Recall curves: Compare SVC & Random forest -----------")
 
 # from sklearn.ensemble import RandomForestClassifier
 
@@ -802,6 +854,11 @@ close_default_rf = np.argmin(np.abs(thresholds_rf - 0.5))
 # plt.ylabel("Recall")
 # plt.legend(loc="best")
 
+# From the comparison plot we can see that the random forest performs better at the extremes, for very high recall or very high precision requirements. 
+# Around the middle (around precision=0.7), the SVM performance better. 
+# If we only looked at the f1-score to compare overall performance, we would have missed these subtleties. 
+# The f1-score only captures one point on the precision-recall curve, the one given by the default threshold:
+
 print("f1_score of random forest: {:.3f}".format(
     f1_score(y_test, rf.predict(X_test))))
 print("f1_score of svc: {:.3f}".format(f1_score(y_test, svc.predict(X_test))))
@@ -816,4 +873,334 @@ print("Average precision of svc: {:.3f}".format(ap_svc))
 # Average precision of random forest: 0.660
 # Average precision of svc: 0.666
 
+# Comparing two precision-recall curves provides a lot of detailed insight, but is a fairly manual process. 
+# For automatic model comparison, we might want to summarize the information contained in the curve, without limiting ourselves to a particular threshold or operating point.
+# One particular way to summarize the precision-recall curve by computing the integral or area under the curve of the precision-recall curve, 
+# also known as average precision.
 
+# from sklearn.metrics import average_precision_score
+
+ap_rf = average_precision_score(y_test, rf.predict_proba(X_test)[:, 1])
+ap_svc = average_precision_score(y_test, svc.decision_function(X_test))
+print("\nAverage precision of random forest: {:.3f}".format(ap_rf))
+print("\nAverage precision of svc: {:.3f}".format(ap_svc))
+# Average precision of random forest: 0.660
+# Average precision of svc: 0.666
+
+# When averaging over all possible thresholds, we see that random forest and SVC perform similarly well. 
+# This is quite different than the result we got from f1_score above.
+
+
+# Receiver Operating Characteristics (ROC) and Area Under the Curve(AUC)  受试者工作特征(ROC)和AUC
+print("\n----------- Receiver Operating Characteristics (ROC) and AUC -----------")
+
+# Instead of reporting precision and recall, ROC shows the false positive rate FPR(false positive rate) against the true positive rate TPR. 
+# FPR = FP/(FP + TN)
+# TPR(Recall) = TP/(TP + FN)
+
+# from sklearn.metrics import roc_curve
+
+fpr, tpr, thresholds = roc_curve(y_test, svc.decision_function(X_test))
+
+# plt.plot(fpr, tpr, label="ROC Curve")
+# plt.xlabel("FPR")
+# plt.ylabel("TPR (recall)")
+# find threshold closest to zero
+close_zero = np.argmin(np.abs(thresholds))
+# plt.plot(fpr[close_zero], tpr[close_zero], 'o', markersize=10,
+#          label="threshold zero", fillstyle="none", c='k', mew=2)
+# plt.legend(loc=4)
+
+# For the ROC curve, the ideal curve is close to the top left: you want a classifier that produces a high recall while keeping a low false positive rate. 
+# Compared to the default threshold of zero, the curve shows that we could achieve a significant higher recall (around 0.9) while only increasing the FPR slightly. 
+# The point closes to the top left might be a better operating point than the one chosen by default. 
+# Again, be aware that choosing a threshold should not be done on the test set, but on a separate validation set.
+
+# You can find a comparison of the Random Forest and the SVC using ROC curves in Figure roc_curve_comparison.
+fpr_rf, tpr_rf, thresholds_rf = roc_curve(y_test, rf.predict_proba(X_test)[:, 1])
+
+# plt.plot(fpr, tpr, label="ROC Curve SVC")
+# plt.plot(fpr_rf, tpr_rf, label="ROC Curve RF")
+
+# plt.xlabel("FPR")
+# plt.ylabel("TPR (recall)")
+# plt.plot(fpr[close_zero], tpr[close_zero], 'o', markersize=10,
+#          label="threshold zero SVC", fillstyle="none", c='k', mew=2)
+close_default_rf = np.argmin(np.abs(thresholds_rf - 0.5))
+# plt.plot(fpr_rf[close_default_rf], tpr[close_default_rf], '^', markersize=10,
+#          label="threshold 0.5 RF", fillstyle="none", c='k', mew=2)
+
+# plt.legend(loc=4)
+
+
+# As for the precision-recall curve, we often want to summarize the ROC curve using a single number, the area under the curve. 
+# Often the area under the ROC-curve is just called AUC (area under the curve) and it is understood that the curve in question is the ROC curve. 
+# We can compute the area under the ROC curve using the roc_auc_score function:
+
+# from sklearn.metrics import roc_auc_score
+rf_auc = roc_auc_score(y_test, rf.predict_proba(X_test)[:, 1])
+svc_auc = roc_auc_score(y_test, svc.decision_function(X_test))
+print("\nAUC for Random Forest: {:.3f}".format(rf_auc))
+print("\nAUC for SVC: {:.3f}".format(svc_auc))
+# AUC for Random Forest: 0.937
+# AUC for SVC: 0.916
+
+# For classification problems with imbalanced classes, using AUC for model-selection is often much more meaningful than using accuracy. 
+# Let’s go back to the problem we studied above of classifying all nines in the digits dataset versus all other digits. 
+# We will classify the dataset with an SVM with three different settings of the kernel band‐width gamma:
+
+y = digits.target == 9
+
+X_train, X_test, y_train, y_test = train_test_split(
+    digits.data, y, random_state=0)
+
+# plt.figure()
+
+for gamma in [1, 0.05, 0.01]:
+    svc = SVC(gamma=gamma).fit(X_train, y_train)
+    accuracy = svc.score(X_test, y_test)
+    auc = roc_auc_score(y_test, svc.decision_function(X_test))
+    fpr, tpr, _ = roc_curve(y_test , svc.decision_function(X_test))
+    print("\ngamma = {:.2f}  accuracy = {:.2f}  AUC = {:.2f}".format(
+          gamma, accuracy, auc))
+    # plt.plot(fpr, tpr, label="gamma={:.3f}".format(gamma))
+# plt.xlabel("FPR")
+# plt.ylabel("TPR")
+# plt.xlim(-0.01, 1)
+# plt.ylim(0, 1.02)
+# plt.legend(loc="best")
+
+# Result:
+# gamma = 1.00  accuracy = 0.90  AUC = 0.50
+# gamma = 0.05  accuracy = 0.90  AUC = 1.00
+# gamma = 0.01  accuracy = 0.90  AUC = 1.00
+
+# The accuracy of all three settings of gamma is the same, 90%. 
+# Finally with gamma=0.01, we get a perfect AUC of 1.0. 
+# That means that all positive points are ranked higher than all negative points according to the decision function. 
+# In other words, with the right threshold, this model can classify the data perfectly! 
+
+# For this reason, we highly recommend using AUC when evaluating models on imbalanced data. 
+# Keep in mind that AUC does not make use of the default threshold, 
+# ]so adjusting the decision threshold might be necessary to obtain useful classification results from a model with high AUC.
+
+
+
+## 5.3.3 Multi-class classification
+# Imagine a three-class classification problem with 85% of points belonging to class A, 10% belonging to class B and 5% belonging to class C. 
+# What does being 85% accurate mean on this dataset?
+print("\n----------- Multi-class classification -----------")
+
+# Apart from accuracy, common tools are the confusion matrix and the classification report we saw in the binary case above.
+# Let’s apply these two detailed evaluation methods on the task of classifying the 10 different hand-written digits in the digits dataset.
+
+# from sklearn.metrics import accuracy_score
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target, random_state=0)
+lr = LogisticRegression().fit(X_train, y_train)
+pred = lr.predict(X_test)
+print("\ndigits.data.shape", digits.data.shape)
+print("\ndigits.target.shape", digits.target.shape)
+# digits.data.shape (1797, 64)
+# digits.target.shape (1797,)
+
+print("\ndigits.data", digits.data)
+print("\ndigits.target", digits.target)
+# digits.data [[ 0.  0.  5. ...  0.  0.  0.]
+#  [ 0.  0.  0. ... 10.  0.  0.]
+#  [ 0.  0.  0. ... 16.  9.  0.]
+#  ...
+#  [ 0.  0.  1. ...  6.  0.  0.]
+#  [ 0.  0.  2. ... 12.  0.  0.]
+#  [ 0.  0. 10. ... 12.  1.  0.]]
+
+# digits.target [0 1 2 ... 8 9 8]
+
+print("\ndigits.data[:2]", digits.data[:2])
+print("\ndigits.target[:20]", digits.target[:20])
+# digits.data[:2] [[ 0.  0.  5. 13.  9.  1.  0.  0.  0.  0. 13. 15. 10. 15.  5.  0.  0.  3.
+#   15.  2.  0. 11.  8.  0.  0.  4. 12.  0.  0.  8.  8.  0.  0.  5.  8.  0.
+#    0.  9.  8.  0.  0.  4. 11.  0.  1. 12.  7.  0.  0.  2. 14.  5. 10. 12.
+#    0.  0.  0.  0.  6. 13. 10.  0.  0.  0.]
+#  [ 0.  0.  0. 12. 13.  5.  0.  0.  0.  0.  0. 11. 16.  9.  0.  0.  0.  0.
+#    3. 15. 16.  6.  0.  0.  0.  7. 15. 16. 16.  2.  0.  0.  0.  0.  1. 16.
+#   16.  3.  0.  0.  0.  0.  1. 16. 16.  6.  0.  0.  0.  0.  1. 16. 16.  6.
+#    0.  0.  0.  0.  0. 11. 16. 10.  0.  0.]]
+
+# digits.target[:20] [0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9]
+
+
+print("\nAccuracy: {:.3f}".format(accuracy_score(y_test, pred)))
+print("\nConfusion matrix:\n{}".format(confusion_matrix(y_test, pred)))
+# Accuracy: 0.953
+# Confusion matrix:
+# [[37  0  0  0  0  0  0  0  0  0]
+#  [ 0 39  0  0  0  0  2  0  2  0]
+#  [ 0  0 41  3  0  0  0  0  0  0]
+#  [ 0  0  1 43  0  0  0  0  0  1]
+#  [ 0  0  0  0 38  0  0  0  0  0]
+#  [ 0  1  0  0  0 47  0  0  0  0]
+#  [ 0  0  0  0  0  0 52  0  0  0]
+#  [ 0  1  0  1  1  0  0 45  0  0]
+#  [ 0  3  1  0  0  0  0  0 43  1]
+#  [ 0  0  0  1  0  1  0  0  1 44]]
+
+# The model has an accuracy of 95.3%, which already tells us that we are doing pretty well. 
+# The confusion matrix provides us with some more detail. 
+# As for the binary case, each row corresponds to a true label, and each column corresponds to a predicted label.
+
+# scores_image = mglearn.tools.heatmap(
+#     confusion_matrix(y_test, pred), xlabel='Predicted label',
+#     ylabel='True label', xticklabels=digits.target_names,
+#     yticklabels=digits.target_names, cmap=plt.cm.gray_r, fmt="%d")
+# plt.title("Confusion matrix")
+# plt.gca().invert_yaxis()
+
+# For the first class, the digit 0, there are 37 samples in the class, 
+# 
+# and all of these samples were classified as class 0 (no false negatives for the zero class).
+# We can see that because all other entries in the first row of the confusion matrix are zero. 
+# 
+# We can also see that no other digits was mistakenly classified as zero, 
+# because all other entries in the first column of the confusion matrix are zero (no false positives for class zero).
+
+# With the classification_report function, we can compute the precision, recall and f-score for each class:
+print(classification_report(y_test, pred))
+#                 precision   recall   f1-score   support
+
+#            0       1.00      1.00      1.00        37
+#            1       0.89      0.91      0.90        43
+#            2       0.95      0.93      0.94        44
+#            3       0.90      0.96      0.92        45
+#            4       0.97      1.00      0.99        38
+#            5       0.98      0.98      0.98        48
+#            6       0.96      1.00      0.98        52
+#            7       1.00      0.94      0.97        48
+#            8       0.93      0.90      0.91        48
+#            9       0.96      0.94      0.95        47
+
+#     accuracy                           0.95       450
+#    macro avg       0.95      0.95      0.95       450
+# weighted avg       0.95      0.95      0.95       450
+
+# “macro” averaging computes the unweighted the per-class f-scores. This gives equal weight to all classes, no matter what their size is.
+# “weighted” averaging computes the mean of the per-class f-scores, weighted by their support. This is what is reported in the classification report.
+# “micro” averaging computes total number of false positives, false negatives and true positives over all classes, and then compute precision, recall and f-score using these counts.
+
+print("Micro average f1 score: {:.3f}".format(
+    f1_score(y_test, pred, average="micro")))
+print("Macro average f1 score: {:.3f}".format(
+    f1_score(y_test, pred, average="macro")))
+# Micro average f1 score: 0.953
+# Macro average f1 score: 0.954
+
+
+
+## 5.3.4 Regression metrics
+# Evaluation for regression can be done in similar detail as we did for classification above, 
+# for example by analyzing over-predicting the target versus under-predicting the target. 
+# However, in most application we’ve seen, using the default R^2 used in the score method of all regressors is enough. 
+
+
+
+## 5.3.5  Using evaluation metrics in model selection
+print("\n----------- Using evaluation metrics in model selection -----------")
+
+# we often want to use metrics like AUC in model selection using Grid SearchCV or cross_val_score.
+# Luckily scikit-learn provides a very simple way to achieve this, via the scoring argument that can be used in both GridSearchCV and cross_val_score. 
+# For example, we want to evaluate the SVC classifier on the “nine vs rest” task on the digits dataset, using the AUC score. C
+# hanging the score from the default (accuracy) to AUC can be done by providing "roc_auc" as the scoring parameter:
+# default scoring for classification is accuracy
+
+print("\n----------- Using evaluation metrics in model selection: SVC Classifier -----------")
+
+print("\nDefault scoring: {}".format(cross_val_score(SVC(), digits.data, digits.target == 9, cv=5)))
+# providing scoring="accuracy" doesn't change the results
+explicit_accuracy =  cross_val_score(SVC(), digits.data, digits.target == 9, scoring="accuracy", cv=5)
+print("\nExplicit accuracy scoring: {}".format(explicit_accuracy))
+roc_auc =  cross_val_score(SVC(), digits.data, digits.target == 9, scoring="roc_auc", cv=5)
+print("\nAUC scoring: {}".format(roc_auc))
+# Default scoring: [0.9 0.9 0.9 0.9 0.9]
+# Explicit accuracy scoring: [0.9 0.9 0.9 0.9 0.9]
+# AUC scoring: [0.997 0.997 0.996 0.998 0.992]
+
+
+print("\n----------- Using evaluation metrics in model selection: GridSearchCV-----------")
+# Similarly we can change the metric used to pick the best parameters in GridSearchCV:
+X_train, X_test, y_train, y_test = train_test_split(
+    digits.data, digits.target == 9, random_state=0)
+
+# we provide a somewhat bad grid to illustrate the point:
+param_grid = {'gamma': [0.0001, 0.01, 0.1, 1, 10]}
+# using the default scoring of accuracy:
+grid = GridSearchCV(SVC(), param_grid=param_grid)
+grid.fit(X_train, y_train)
+print("\nGrid-Search with default scoring accuracy:")
+print("\nBest parameters:", grid.best_params_)
+print("\nBest cross-validation score (accuracy)): {:.3f}".format(grid.best_score_))
+print("\nTest set AUC: {:.3f}".format(
+    roc_auc_score(y_test, grid.decision_function(X_test))))
+print("\nTest set accuracy: {:.3f}".format(grid.score(X_test, y_test)))
+# Grid-Search with default scoring of accuracy:
+# Best parameters: {'gamma': 0.0001}
+# Best cross-validation score (accuracy)): 0.970
+# Test set AUC: 0.992
+# Test set accuracy: 0.973
+
+# using AUC scoring instead:
+grid = GridSearchCV(SVC(), param_grid=param_grid, scoring="roc_auc")
+grid.fit(X_train, y_train)
+print("\nGrid-Search with AUC:")
+print("\nBest parameters:", grid.best_params_)
+print("\nBest cross-validation score (AUC): {:.3f}".format(grid.best_score_))
+print("\nTest set AUC: {:.3f}".format(
+    roc_auc_score(y_test, grid.decision_function(X_test))))
+print("\nTest set accuracy: {:.3f}".format(grid.score(X_test, y_test)))
+# Grid-Search with AUC:
+# Best parameters: {'gamma': 0.01}
+# Best cross-validation score (AUC): 0.997
+# Test set AUC: 1.000
+# Test set accuracy: 1.000
+
+# When using accuracy, the parameter gamma=0.0001 is selected, while gamma=0.01 is selected when using AUC. 
+# The cross-validation accuracy is consistent with the test set accuracy in both cases. 
+# However, using AUC found a better parameter setting, both in terms of AUC and even in terms of accuracy.
+
+# The most important values for the scoring parameter for classification are accuracy (the default), 
+# roc_auc for the area under the ROC curve, average_precision for the area under the precision-recall curve, 
+# f1, f1_macro, f1_micro and f1_weighted for the binary F1 score and the different weighted variants.
+
+# For regression, the most commonly used values are r2 for the R^2 score, mean_squared_error for mean squared error 
+# and mean_absolute_error for mean absolute error.
+
+# You can find a full list of supported arguments in the documentation
+# http://scikit-learn.org/stable/modules/model_evaluation.html#the-scoring-parameter-defining-model-evaluation-rules
+# or by looking at the SCORER dictionary defined in the metrics.scorer module:
+
+# from sklearn.metrics.scorer import SCORERS
+print("\nAvailable scorers:")
+print(sorted(SCORERS.keys()))
+# Available scorers:
+# ['accuracy', 'adjusted_mutual_info_score', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy', 'brier_score_loss', 'completeness_score', 'explained_variance', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 'fowlkes_mallows_score', 'homogeneity_score', 'jaccard', 'jaccard_macro', 'jaccard_micro', 'jaccard_samples', 'jaccard_weighted', 'max_error', 'mutual_info_score', 'neg_log_loss', 'neg_mean_absolute_error', 'neg_mean_squared_error', 'neg_mean_squared_log_error', 'neg_median_absolute_error', 'normalized_mutual_info_score', 'precision', 'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc', 'v_measure_score']
+
+
+
+## 5.4 Summary and outlook
+# In this chapter we discussed cross-validation, grid-search and evaluation metrics, the corner-stones of evaluating and improving machine learning algorithms. 
+
+# There are two particular points that we made in this chapter:
+
+# 1) Cross-validation
+# We therefore need to resort to a split into training data for model building, validation data for model and parameter selection, and test data for model evaluation. 
+# Instead of a simple split, we can replace each of these splits with cross-validation. 
+# The most commonly used form as described above is a train-test split for evaluation, 
+# and using cross-validation on the training set for model and parameter selection.
+
+# 2) evaluation metric or scoring function used for model selection and model evaluation
+# The techniques model evaluation and selection techniques we described so far are the most important tools in a data scientists toolbox. 
+
+# However, grid search and cross validation as we described it in this chapter can only be applied to a single supervised model. 
+# We have seen before, however, that many models require preprocessing, and that in some applications, 
+# like the face recognition example in Chapter 3, extracting a different representation of the data can be useful. 
+
+# In the next chapter, we will introduce the Pipeline class, 
+# which allows us to use grid-search and cross-validation on these complex chains of algorithms.
