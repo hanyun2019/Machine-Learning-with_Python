@@ -243,6 +243,7 @@ print("\nBest cross-validation score: {:.2f}".format(grid.best_score_))
 # Another way that we can get rid of uninformative words is by discarding words that are too frequent to be informative. 
 # There are two main approaches: using a language-specific list of stop words, or discarding words that appear too frequently. 
 # Scikit-learn had a built-in list of English stop-words in the feature_extraction.text module:
+print("\n----------- Stop-words -----------")
 
 # from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
@@ -293,6 +294,7 @@ print("\nBest cross-validation score: {:.2f}".format(grid.best_score_))
 # 计算文件频率 (DF) 的方法是测定有多少份文件出现过“母牛”一词，然后除以文件集里包含的文件总数;
 # 所以如果“母牛”一词在1,000份文件出现过，而文件总数是10,000,000份的话，其逆向文件频率(idf)就是 ln(10,000,000 / 1,000)=4。
 # 最后的TF-IDF的分数为0.03 * 4=0.12。
+print("\n----------- Rescaling the Data with tf-idf -----------")
 
 # from sklearn.feature_extraction.text import TfidfVectorizer
 # from sklearn.pipeline import make_pipeline
@@ -353,3 +355,105 @@ print("\nFeatures with lowest idf:\n{}".format(feature_names[sorted_by_idf[:100]
 
 
 ## 7.6 Investigating model coefficients 研究模型系数
+
+
+
+## 7.7 Bag of words with more than one word (n-grams)   多个单词的词袋(n元分词)
+# One of the main disadvantages of using a bag-of-word representation is that word order is completely discarded. 
+# There is a way of capturing context when using a bag-of-word representation, by not only considering the counts of single tokens, 
+# but also the counts of pairs or triples of tokens that appear next to each other.
+print("\n----------- Bag of words with more than one word (n-grams) -----------")
+
+print("bards_words:\n{}".format(bards_words))
+# bards_words:
+# ['The fool doth think he is wise,', 'but the wise man knows himself to be a fool']
+
+# The default is to create one feature per sequence of tokens that are at least one token long, and at most one token long, 
+# in other words exactly one token long (single tokens are also called unigrams):
+cv = CountVectorizer(ngram_range=(1, 1)).fit(bards_words)
+print("\nVocabulary size: {}".format(len(cv.vocabulary_)))
+print("\nVocabulary:\n{}".format(cv.get_feature_names()))
+print("\nVocabulary content:\n{}".format(cv.vocabulary_))
+# Vocabulary size: 13
+# Vocabulary:
+# ['be', 'but', 'doth', 'fool', 'he', 'himself', 'is', 'knows', 'man', 'the', 'think', 'to', 'wise']
+# Vocabulary content:
+# {'the': 9, 'fool': 3, 'doth': 2, 'think': 10, 'he': 4, 'is': 6, 'wise': 12, 'but': 1, 'man': 8, 'knows': 7, 'himself': 5, 'to': 11, 'be': 0}
+print("\nTransformed data (dense):\n{}".format(cv.transform(bards_words).toarray()))
+# Transformed data (dense):
+# [[0 0 1 1 1 0 1 0 0 1 1 0 1]
+#  [1 1 0 1 0 1 0 1 1 1 0 1 1]]
+
+
+# To look only at bigrams, that is only at sequences of two tokens following each other, we can set ngram_range to (2, 2):
+cv = CountVectorizer(ngram_range=(2, 2)).fit(bards_words)
+print("\nVocabulary size: {}".format(len(cv.vocabulary_)))
+print("\nVocabulary:\n{}".format(cv.get_feature_names()))
+print("\nVocabulary content:\n{}".format(cv.vocabulary_))
+# Vocabulary size: 14
+# Vocabulary:
+# ['be fool', 'but the', 'doth think', 'fool doth', 'he is', 'himself to', 'is wise', 'knows himself', 'man knows', 'the fool', 'the wise', 'think he', 'to be', 'wise man']
+# Vocabulary content:
+# {'the fool': 9, 'fool doth': 3, 'doth think': 2, 'think he': 11, 'he is': 4, 'is wise': 6, 'but the': 1, 'the wise': 10, 'wise man': 13, 'man knows': 8, 'knows himself': 7, 'himself to': 5, 'to be': 12, 'be fool': 0}
+print("\nTransformed data (dense):\n{}".format(cv.transform(bards_words).toarray()))
+# Transformed data (dense). There is no common bigram between the two phrases in bard_words:
+# [[0 0 1 1 1 0 1 0 0 1 0 1 0 0]
+#  [1 1 0 0 0 1 0 1 1 0 1 0 1 1]]
+
+
+cv = CountVectorizer(ngram_range=(1, 3)).fit(bards_words)
+print("\nVocabulary size: {}".format(len(cv.vocabulary_)))
+print("\nVocabulary:\n{}".format(cv.get_feature_names()))
+print("\nVocabulary content:\n{}".format(cv.vocabulary_))
+# Vocabulary size: 39
+# Vocabulary:
+# ['be', 'be fool', 'but', 'but the', 'but the wise', 'doth', 'doth think', 'doth think he', 'fool', 'fool doth', 'fool doth think', 'he', 'he is', 'he is wise', 'himself', 'himself to', 'himself to be', 'is', 'is wise', 'knows', 'knows himself', 'knows himself to', 'man', 'man knows', 'man knows himself', 'the', 'the fool', 'the fool doth', 'the wise', 'the wise man', 'think', 'think he', 'think he is', 'to', 'to be', 'to be fool', 'wise', 'wise man', 'wise man knows']
+# Vocabulary content:
+# {'the': 25, 'fool': 8, 'doth': 5, 'think': 30, 'he': 11, 'is': 17, 'wise': 36, 'the fool': 26, 'fool doth': 9, 'doth think': 6, 'think he': 31, 'he is': 12, 'is wise': 18, 'the fool doth': 27, 'fool doth think': 10, 'doth think he': 7, 'think he is': 32, 'he is wise': 13, 'but': 2, 'man': 22, 'knows': 19, 'himself': 14, 'to': 33, 'be': 0, 'but the': 3, 'the wise': 28, 'wise man': 37, 'man knows': 23, 'knows himself': 20, 'himself to': 15, 'to be': 34, 'be fool': 1, 'but the wise': 4, 'the wise man': 29, 'wise man knows': 38, 'man knows himself': 24, 'knows himself to': 21, 'himself to be': 16, 'to be fool': 35}
+# Transformed data (dense):
+# [[0 0 0 0 0 1 1 1 1 1 1 1 1 1 0 0 0 1 1 0 0 0 0 0 0 1 1 1 0 0 1 1 1 0 0 0
+#   1 0 0]
+#  [1 1 1 1 1 0 0 0 1 0 0 0 0 0 1 1 1 0 0 1 1 1 1 1 1 1 0 0 1 1 0 0 0 1 1 1
+#   1 1 1]]
+
+
+# Let’s use the TfidfVectorizer on the IMDb movie review data and find the best setting of n-gram range using grid-search:
+pipe = make_pipeline(TfidfVectorizer(min_df=5), LogisticRegression())
+# running the grid-search takes a long time because of the
+# relatively large grid and the inclusion of trigrams
+param_grid = {'logisticregression__C': [0.001, 0.01, 0.1, 1, 10, 100],
+              "tfidfvectorizer__ngram_range": [(1, 1), (1, 2), (1, 3)]}
+
+grid = GridSearchCV(pipe, param_grid, cv=5)
+grid.fit(text_train, y_train)
+print("\nBest cross-validation score: {:.2f}".format(grid.best_score_))
+print("\nBest parameters:\n{}".format(grid.best_params_))
+
+
+
+## 7.8 Advanced tokenization, stemming and lemmatization    高级分词、词干提取和词性还原
+# Please refer to the following python program about 'Advanced tokenization, stemming and lemmatization'
+# stemming.py
+
+
+## 7.9 Topic Modeling and Document Clustering   主题建模和文档聚类
+# Please refer to the following python program about 'Topic Modeling and Document Clustering'
+# topicmodeling.py
+
+
+## 7.10 Summary and Outlook
+# In particular for text classification such as spam and fraud detection or sentiment analysis, 
+# bag of word representations provide a simple and powerful solution. 
+# 
+# As so often in machine learning, the representation of the data is key in NLP applications, 
+# and inspecting the tokens and n-grams that are extracted can give powerful insights into the modeling process. 
+# 
+# In text processing applications, it is often possible to introspect models in a meaningful way, 
+# as we saw above, both for supervised and unsupervised tasks. 
+# 
+# 
+# There have been several very exciting new developments in text processing in recent years.
+# 1) The first is the use of continuous vector representations, also known as word vectors or distributed word representations, 
+# as implemented in the word2vec library. The original paper “Distributed representations of words and phrases and their compositionality” 
+# by Mikolov, Suskever, Chen, Corrado and Dean is a great introduction to the subject. 
+# 2) Another direction in NLP that has picked up momentum in recent years are recurrent neural networks (RNNs) for text processing.
